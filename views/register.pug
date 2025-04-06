@@ -1,0 +1,21 @@
+extends layout
+
+block content
+  h1 Регистрация
+  form(method='POST' action='/register')
+    label Потребителско име:
+    input(type='text', name='username')
+    br
+    label Име:
+    input(type='text', name='name')
+    br
+    label Имейл:
+    input(type='email', name='email')
+    br
+    label Парола:
+    input(type='password', name='password')
+    br
+    button(type='submit') Регистрирай се
+  p
+    | Вече имаш акаунт?
+    a(href='/login') Вход

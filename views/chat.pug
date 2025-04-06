@@ -1,0 +1,33 @@
+doctype html
+html
+  head
+    title Чат
+    style.
+      #messages {
+        list-style-type: none;
+        padding: 0;
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+      }
+      #messageForm {
+        margin-top: 20px;
+        display: flex;
+      }
+      #messageInput {
+        flex-grow: 1;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+  body
+    h1 Чат система
+    ul#messages
+    form#messageForm
+      input#messageInput(type="text", placeholder="Напишете съобщение...", autocomplete="off")
+      button(type="submit") Изпрати
+
+    script(src="https://cdn.socket.io/4.0.1/socket.io.min.js")
+    script(src="/js/chat.js")
