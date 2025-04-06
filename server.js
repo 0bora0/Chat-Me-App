@@ -11,7 +11,6 @@ const Message = require("./models/Message");
 const MongoStore = require("connect-mongo");
 const cors = require("cors");
 const cookieParser = require('cookie-parser');
-
 const app = express();
 const server = http.createServer(app);
 
@@ -34,6 +33,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
+// Настройка на Pug като шаблонен двигател
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
@@ -157,21 +157,20 @@ io.on("connection", async (socket) => {
   socket.emit("message history", messages.reverse());
 
   socket.on('chatMessage', (messageData) => {
-              const messageText = messageData.text;  
-              const message = new Message({
-                  text: messageText,
-                  timestamp: messageData.timestamp, 
-              });
-          
-              message.save((err) => {
-                  if (err) {
-                      console.warn('Error saving message:', err);
-                  } else {
-                      console.log('Message saved');
-                  }
-              });
-          });
-          
+    const messageText = messageData.text;  
+    const message = new Message({
+      text: messageText,
+      timestamp: messageData.timestamp, 
+    });
+
+    message.save((err) => {
+      if (err) {
+        console.warn('Error saving message:', err);
+      } else {
+        console.log('Message saved');
+      }
+    });
+  });
 
   socket.on("disconnect", () => {
     console.log(`${user.username} напусна чата`);
