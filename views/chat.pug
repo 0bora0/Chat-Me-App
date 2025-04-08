@@ -1,16 +1,59 @@
 doctype html
-html
+html(lang="bg")
   head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title Чат
+    link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet")
     style.
+      body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f7fc;
+      }
+      h1 {
+        color: #343a40;
+        text-align: center;
+        margin-top: 20px;
+      }
+      .chat-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #ffffff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        margin-bottom: 20px;
+      }
+      .chat-box {
+        max-height: 500px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 20px;
+        background-color: #f9f9f9;
+        margin-bottom: 20px;
+      }
       #messages {
         list-style-type: none;
         padding: 0;
+        margin: 0;
         max-height: 400px;
         overflow-y: auto;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+        background-color: #fff;
+      }
+      #messages li {
         padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        transition: background-color 0.3s ease;
+      }
+      #messages li.user-message {
+        background-color: #e0f7fa;
+        text-align: left;
+      }
+      #messages li.bot-message {
+        background-color: #f1f8e9;
+        text-align: right;
       }
       #userList {
         list-style-type: none;
@@ -21,37 +64,84 @@ html
         border: 1px solid #ddd;
         border-radius: 4px;
         padding: 10px;
+        background-color: #fff;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
-      #messageForm {
+      #messageForm, #privateMessageForm {
         margin-top: 20px;
         display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
-      #messageInput {
+      #messageInput, #privateMessageInput {
         flex-grow: 1;
-        padding: 8px;
+        padding: 10px;
         border: 1px solid #ddd;
         border-radius: 4px;
+        font-size: 14px;
       }
-      #privateMessageForm {
-        margin-top: 20px;
+      button[type="submit"] {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 10px 15px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.3s ease;
+      }
+      button[type="submit"]:hover {
+        background-color: #0056b3;
+      }
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+      .chat-header {
         display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 10px;
       }
-      #privateMessageInput {
-        flex-grow: 1;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+      .chat-header .title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #343a40;
+      }
+      .chat-header .status {
+        font-size: 1rem;
+        color: #28a745;
+      }
+      @media (max-width: 768px) {
+        .chat-container {
+          padding: 15px;
+        }
+        #messageInput, #privateMessageInput {
+          font-size: 16px;
+        }
       }
   body
-    h1 Чат система
-    ul#messages  // This is where messages will be appended
-    ul#userList  // This is where the user list will be appended
-    form#messageForm
-      input#messageInput(type="text", placeholder="Напишете съобщение...", autocomplete="off")
-      button(type="submit") Изпрати
-    form#privateMessageForm
-      input#privateMessageInput(type="text", placeholder="Частно съобщение...", autocomplete="off")
-      button(type="submit") Изпрати частно съобщение
+    .container.chat-container
+      h1 Чат система
+      .chat-header
+        .title Чат с поддръжка
+        .status Онлайн
+      .chat-box
+        ul#messages
+          li(class="user-message") Здравейте! Как може да Ви помогна?
+          li(class="bot-message") Здравейте! Какъв е въпросът ви?
+      .row
+        .col-12
+          form#messageForm
+            .form-group
+              input#messageInput(type="text", class="form-control", placeholder="Напишете съобщение...", autocomplete="off")
+            button(type="submit") Изпрати
+        .col-12
+          form#privateMessageForm
+            .form-group
+              input#privateMessageInput(type="text", class="form-control", placeholder="Частно съобщение...", autocomplete="off")
+            button(type="submit") Изпрати частно съобщение
 
     script(src="https://cdn.socket.io/4.0.1/socket.io.min.js")
     script(src="/js/chat.js")
