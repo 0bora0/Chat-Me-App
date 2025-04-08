@@ -27,27 +27,21 @@ A real-time chat application built with Node.js, Express.js, MongoDB, Socket.io,
 - [MongoDB](https://www.mongodb.com/try/download/community) or a MongoDB Atlas account.
 
 ### Steps to Install and Run Locally
-
-1. **Clone the repository**:
-    ```bash
-    git clone https://github.com/your-username/chat-notes-app.git
-    ```
-
-2. **Install dependencies**:
+1. **Install dependencies**:
     Navigate to the project folder and install dependencies:
     ```bash
     cd chat-notes-app
     npm install
     ```
 
-3. **Set up MongoDB**:
+2. **Set up MongoDB**:
     - If you're using MongoDB locally, make sure MongoDB is running on your machine.
     - If you're using MongoDB Atlas, create a `.env` file at the root of the project and add the MongoDB URI like so:
     ```env
     MONGO_URI=your-mongodb-uri
     ```
 
-4. **Start the server**:
+3. **Start the server**:
     ```bash
     npm start
     ```
