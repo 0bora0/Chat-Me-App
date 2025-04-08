@@ -1,22 +1,195 @@
 extends layout
 
 block content
+  style.
+    :root {
+      --primary-color: #4361ee;
+      --primary-hover: #3a56d4;
+      --secondary-color: #f72585;
+      --text-dark: #2b2d42;
+      --text-light: #8d99ae;
+      --bg-light: #f8f9fa;
+      --gradient: linear-gradient(135deg, #4361ee 0%, #3f37c9 100%);
+    }
+    
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: var(--bg-light);
+      background-image: url('https://images.unsplash.com/photo-1518655048521-f130df041f66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      color: var(--text-dark);
+    }
+    
+    .register-container {
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    .register-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .register-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.25);
+    }
+    
+    .register-header {
+      text-align: center;
+      padding: 2rem 0 1rem;
+      position: relative;
+    }
+    
+    .register-header h1 {
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 0.5rem;
+      font-size: 2.2rem;
+    }
+    
+    .register-header::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 4px;
+      background: var(--gradient);
+      margin: 0.5rem auto;
+      border-radius: 2px;
+    }
+    
+    .register-form {
+      padding: 0 2rem 2rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 0.95rem;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      font-size: 1rem;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      background-color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .form-control:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+      outline: none;
+    }
+    
+    .form-control::placeholder {
+      color: var(--text-light);
+      opacity: 0.6;
+    }
+    
+    .btn-register {
+      width: 100%;
+      padding: 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: white;
+      background: var(--gradient);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 0.5rem;
+    }
+    
+    .btn-register:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+    }
+    
+    .btn-register:active {
+      transform: translateY(0);
+    }
+    
+    .login-link {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .login-link a {
+      color: var(--primary-color);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+    
+    .login-link a:hover {
+      color: var(--secondary-color);
+      text-decoration: underline;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+      .register-container {
+        padding: 1rem;
+      }
+      
+      .register-card {
+        border-radius: 12px;
+      }
+      
+      .register-form {
+        padding: 0 1rem 1rem;
+      }
+    }
 
-  h1 Регистрация
-  form(method='POST' action='/register')
-    label Потребителско име:
-    input(type='text', name='username')
-    br
-    label Име:
-    input(type='text', name='name')
-    br
-    label Имейл:
-    input(type='email', name='email')
-    br
-    label Парола:
-    input(type='password', name='password')
-    br
-    button(type='submit') Регистрирай се
-  p
-    | Вече имаш акаунт?
-    a(href='/login') Вход
+  .register-container
+    .register-card
+      .register-header
+        h1 Регистрация
+      
+      form.register-form(method='POST' action='/register')
+        .form-group
+          label.form-label(for="username") Потребителско име
+          input.form-control(type='text', name='username', id="username", placeholder="Въведете потребителско име", required)
+        
+        .form-group
+          label.form-label(for="name") Име
+          input.form-control(type='text', name='name', id="name", placeholder="Въведете вашето име", required)
+        
+        .form-group
+          label.form-label(for="email") Имейл
+          input.form-control(type='email', name='email', id="email", placeholder="Въведете вашия имейл", required)
+        
+        .form-group
+          label.form-label(for="password") Парола
+          input.form-control(type='password', name='password', id="password", placeholder="Въведете парола", required)
+        
+        button.btn-register(type='submit') Регистрирай се
+      
+      .login-link
+        | Вече имате акаунт? 
+        a(href='/login') Влезте оттук
