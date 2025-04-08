@@ -3,145 +3,278 @@ html(lang="bg")
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
-    title Чат
-    link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet")
+    title Чат система
+    link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet")
     style.
+      :root {
+        --primary-color: #4361ee;
+        --secondary-color: #3f37c9;
+        --accent-color: #4895ef;
+        --light-color: #f8f9fa;
+        --dark-color: #212529;
+        --success-color: #4cc9f0;
+        --user-message-bg: #e3f2fd;
+        --other-message-bg: #f0f4f8;
+        --private-message-bg: #fce4ec;
+      }
+      
       body {
-        font-family: 'Arial', sans-serif;
-        background-color: #f4f7fc;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f7fb;
+        color: var(--dark-color);
+        min-height: 100vh;
+        padding-top: 2rem;
       }
-      h1 {
-        color: #343a40;
-        text-align: center;
-        margin-top: 20px;
-      }
+      
       .chat-container {
-        max-width: 900px;
+        max-width: 1000px;
         margin: 0 auto;
-        padding: 20px;
-        background-color: #ffffff;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        border-radius: 10px;
-        margin-bottom: 20px;
+        padding: 0;
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
       }
-      .chat-box {
-        max-height: 500px;
+      
+      .chat-header {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 1.2rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .chat-header .title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin: 0;
+      }
+      
+      .chat-header .status {
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+      }
+      
+      .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #4ade80;
+        margin-right: 8px;
+        animation: pulse 1.5s infinite;
+      }
+      
+      .chat-layout {
+        display: flex;
+        height: calc(100vh - 180px);
+      }
+      
+      .users-sidebar {
+        width: 250px;
+        background-color: #f8f9fa;
+        border-right: 1px solid #dee2e6;
         overflow-y: auto;
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        padding: 20px;
-        background-color: #f9f9f9;
-        margin-bottom: 20px;
+        padding: 15px;
       }
+      
+      .chat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .chat-box {
+        height: 100%;
+        overflow-y: auto;
+        padding: 1.5rem;
+        background-color: #fafcff;
+      }
+      
       #messages {
         list-style-type: none;
         padding: 0;
         margin: 0;
-        max-height: 400px;
-        overflow-y: auto;
-        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
       }
+      
       #messages li {
-        padding: 10px;
-        border-radius: 6px;
-        margin-bottom: 10px;
-        transition: background-color 0.3s ease;
+        max-width: 75%;
+        padding: 12px 16px;
+        border-radius: 12px;
+        line-height: 1.5;
+        position: relative;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       }
-      #messages li.user-message {
-        background-color: #e0f7fa;
-        text-align: left;
+      
+      #messages li.my-message {
+        background-color: var(--user-message-bg);
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
       }
-      #messages li.bot-message {
-        background-color: #f1f8e9;
-        text-align: right;
+      
+      #messages li.other-message {
+        background-color: var(--other-message-bg);
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
       }
-      #userList {
-        list-style-type: none;
-        padding: 0;
-        margin: 10px 0;
-        max-height: 200px;
-        overflow-y: auto;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 10px;
-        background-color: #fff;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      
+      #messages li.private-message {
+        background-color: var(--private-message-bg);
+        border-left: 3px solid #e91e63;
       }
-      #messageForm, #privateMessageForm {
-        margin-top: 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+      
+      .message-time {
+        display: block;
+        font-size: 0.7rem;
+        opacity: 0.7;
+        margin-top: 4px;
       }
-      #messageInput, #privateMessageInput {
-        flex-grow: 1;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-      }
-      button[type="submit"] {
-        background-color: #007bff;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 10px 15px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: background-color 0.3s ease;
-      }
-      button[type="submit"]:hover {
-        background-color: #0056b3;
-      }
-      .form-group {
-        margin-bottom: 1.5rem;
-      }
-      .chat-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 10px;
-        margin-bottom: 10px;
-      }
-      .chat-header .title {
-        font-size: 1.5rem;
+      
+      .message-username {
         font-weight: bold;
-        color: #343a40;
+        margin-bottom: 4px;
       }
-      .chat-header .status {
-        font-size: 1rem;
-        color: #28a745;
+      
+      .input-area {
+        padding: 1.2rem 1.5rem;
+        background-color: white;
+        border-top: 1px solid #e9ecef;
       }
+      
+      .user-item {
+        padding: 8px 12px;
+        margin-bottom: 5px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+      }
+      
+      .user-item:hover {
+        background-color: #e9ecef;
+      }
+      
+      .user-item.active {
+        background-color: #4361ee;
+        color: white;
+      }
+      
+      .user-status {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 10px;
+      }
+      
+      .online {
+        background-color: #28a745;
+      }
+      
+      .offline {
+        background-color: #6c757d;
+      }
+      
+      .private-chat-header {
+        padding: 10px 15px;
+        background-color: #e9ecef;
+        border-bottom: 1px solid #dee2e6;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+      }
+      
+      @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+      }
+      
+      .chat-box::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      .chat-box::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+      
+      .chat-box::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
+      }
+      
+      .chat-box::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+      
       @media (max-width: 768px) {
-        .chat-container {
-          padding: 15px;
+        .chat-layout {
+          flex-direction: column;
+          height: auto;
         }
-        #messageInput, #privateMessageInput {
-          font-size: 16px;
+        
+        .users-sidebar {
+          width: 100%;
+          height: 200px;
+          border-right: none;
+          border-bottom: 1px solid #dee2e6;
+        }
+        
+        .chat-box {
+          height: 400px;
+          padding: 1rem;
         }
       }
-  body
-    .container.chat-container
-      h1 Чат система
-      .chat-header
-        .title Чат с поддръжка
-        .status Онлайн
-      .chat-box
-        ul#messages
-          li(class="user-message") Здравейте! Как може да Ви помогна?
-          li(class="bot-message") Здравейте! Какъв е въпросът ви?
-      .row
-        .col-12
-          form#messageForm
-            .form-group
-              input#messageInput(type="text", class="form-control", placeholder="Напишете съобщение...", autocomplete="off")
-            button(type="submit") Изпрати
-        .col-12
-          form#privateMessageForm
-            .form-group
-              input#privateMessageInput(type="text", class="form-control", placeholder="Частно съобщение...", autocomplete="off")
-            button(type="submit") Изпрати частно съобщение
 
+  body
+    #userData(data-user=JSON.stringify(user))
+    .container.chat-container
+      .chat-header
+        .title Чат система
+        .status
+          span.status-indicator
+          span Онлайн
+      
+      .chat-layout
+        .users-sidebar
+          h5 Потребители онлайн
+          ul#onlineUsers.list-unstyled
+        
+        .chat-main
+          .chat-box
+            ul#messages
+              each message in messages
+                li(class=message.user._id.toString() === user._id.toString() ? 'my-message' : 'other-message')
+                  .message-username= message.user.username
+                  | #{message.text}
+                  span.message-time= new Date(message.timestamp).toLocaleTimeString()
+          
+          .input-area
+            form#messageForm
+              .form-row
+                .form-group
+                  input#messageInput(type="text", class="form-control", placeholder="Напишете съобщение...", autocomplete="off")
+                button(type="submit")
+                  i.fas.fa-paper-plane
+                  span Изпрати
+            
+            form#privateMessageForm.mt-3.d-none
+              .private-chat-header
+                i.fas.fa-user
+                span#privateChatWith.ml-2 Изберете потребител
+              .form-row
+                .form-group
+                  input#privateMessageInput(type="text", class="form-control", placeholder="Напишете частно съобщение...", autocomplete="off")
+                button(type="submit")
+                  i.fas.fa-lock
+                  span Изпрати
+
+    script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js")
     script(src="https://cdn.socket.io/4.0.1/socket.io.min.js")
     script(src="/js/chat.js")
