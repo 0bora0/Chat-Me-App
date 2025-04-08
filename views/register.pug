@@ -6,15 +6,24 @@ block content
       --primary-color: #4361ee;
       --primary-hover: #3a56d4;
       --secondary-color: #f72585;
+      --accent-color: #4cc9f0;
       --text-dark: #2b2d42;
+      --text-medium: #4a4e69;
       --text-light: #8d99ae;
       --bg-light: #f8f9fa;
+      --bg-dark: #1a1a2e;
       --gradient: linear-gradient(135deg, #4361ee 0%, #3f37c9 100%);
+      --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 8px 15px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 15px 30px rgba(0, 0, 0, 0.15);
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
     
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    
     body {
-      font-family: 'Montserrat', sans-serif;
-      background-color: var(--bg-light);
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-dark);
       background-image: url('https://images.unsplash.com/photo-1518655048521-f130df041f66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
       background-size: cover;
       background-position: center;
@@ -22,112 +31,163 @@ block content
       min-height: 100vh;
       display: flex;
       align-items: center;
+      justify-content: center;
       color: var(--text-dark);
+      margin: 0;
+      padding: 2rem;
     }
     
     .register-container {
       width: 100%;
-      max-width: 500px;
+      max-width: 480px;
       margin: 0 auto;
-      padding: 2rem;
+      animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     
     .register-card {
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255, 255, 255, 0.98);
       border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: var(--shadow-lg);
       overflow: hidden;
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: var(--transition);
+      position: relative;
+      z-index: 1;
     }
     
-    .register-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.25);
+    .register-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: var(--gradient);
+      opacity: 0.1;
+      z-index: -1;
+      transform: rotate(15deg);
     }
     
     .register-header {
       text-align: center;
-      padding: 2rem 0 1rem;
+      padding: 2.5rem 2rem 1.5rem;
       position: relative;
     }
     
     .register-header h1 {
       font-weight: 700;
       color: var(--primary-color);
-      margin-bottom: 0.5rem;
+      margin: 0;
       font-size: 2.2rem;
+      letter-spacing: -0.5px;
+      position: relative;
+      display: inline-block;
     }
     
-    .register-header::after {
+    .register-header h1::after {
       content: '';
-      display: block;
-      width: 60px;
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 50px;
       height: 4px;
       background: var(--gradient);
-      margin: 0.5rem auto;
       border-radius: 2px;
     }
     
     .register-form {
-      padding: 0 2rem 2rem;
+      padding: 0 2.5rem 2.5rem;
     }
     
     .form-group {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.75rem;
       position: relative;
     }
     
     .form-label {
       display: block;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
       font-weight: 600;
-      color: var(--text-dark);
+      color: var(--text-medium);
       font-size: 0.95rem;
+      transition: var(--transition);
     }
     
     .form-control {
       width: 100%;
-      padding: 0.8rem 1rem;
+      padding: 1rem 1.25rem;
       font-size: 1rem;
       border: 2px solid #e9ecef;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 10px;
+      transition: var(--transition);
+      background-color: white;
+      box-shadow: var(--shadow-sm);
     }
     
     .form-control:focus {
       border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
       outline: none;
     }
     
     .form-control::placeholder {
       color: var(--text-light);
-      opacity: 0.6;
+      opacity: 0.8;
+      font-weight: 400;
+    }
+    
+    .input-icon {
+      position: absolute;
+      right: 1.25rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+      font-size: 1.1rem;
     }
     
     .btn-register {
       width: 100%;
-      padding: 1rem;
+      padding: 1.1rem;
       font-size: 1rem;
       font-weight: 600;
       color: white;
       background: var(--gradient);
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: var(--transition);
       text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-top: 0.5rem;
+      letter-spacing: 1.5px;
+      margin-top: 1rem;
+      box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn-register::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(rgba(255,255,255,0.1), rgba(255,255,255,0.1));
+      opacity: 0;
+      transition: var(--transition);
     }
     
     .btn-register:hover {
-      background: var(--primary-hover);
-      transform: translateY(-2px);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(67, 97, 238, 0.4);
+    }
+    
+    .btn-register:hover::after {
+      opacity: 1;
     }
     
     .btn-register:active {
@@ -136,32 +196,97 @@ block content
     
     .login-link {
       text-align: center;
-      margin-top: 1.5rem;
-      font-size: 0.9rem;
+      margin-top: 2rem;
+      font-size: 0.95rem;
+      color: var(--text-medium);
     }
     
     .login-link a {
       color: var(--primary-color);
       text-decoration: none;
-      transition: color 0.3s ease;
+      font-weight: 600;
+      transition: var(--transition);
+      position: relative;
+      padding-bottom: 2px;
+    }
+    
+    .login-link a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--secondary-color);
+      transition: var(--transition);
     }
     
     .login-link a:hover {
       color: var(--secondary-color);
-      text-decoration: underline;
     }
-
+    
+    .login-link a:hover::after {
+      width: 100%;
+    }
+    
+    .form-footer {
+      margin-top: 2.5rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+    
+    .social-login {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    
+    .social-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      color: var(--text-medium);
+      border: 1px solid #e9ecef;
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .social-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      color: var(--primary-color);
+    }
+    
     @media (max-width: 576px) {
-      .register-container {
+      body {
         padding: 1rem;
+        background-attachment: scroll;
+      }
+      
+      .register-container {
+        max-width: 100%;
       }
       
       .register-card {
         border-radius: 12px;
       }
       
+      .register-header {
+        padding: 2rem 1.5rem 1rem;
+      }
+      
       .register-form {
-        padding: 0 1rem 1rem;
+        padding: 0 1.5rem 1.5rem;
+      }
+      
+      .btn-register {
+        padding: 1rem;
       }
     }
 
@@ -169,26 +294,48 @@ block content
     .register-card
       .register-header
         h1 Регистрация
+        p Създайте своя акаунт за да продължите
       
       form.register-form(method='POST' action='/register')
         .form-group
           label.form-label(for="username") Потребителско име
           input.form-control(type='text', name='username', id="username", placeholder="Въведете потребителско име", required)
+          i.fas.fa-user.input-icon
         
         .form-group
-          label.form-label(for="name") Име
+          label.form-label(for="name") Пълно име
           input.form-control(type='text', name='name', id="name", placeholder="Въведете вашето име", required)
+          i.fas.fa-id-card.input-icon
         
         .form-group
-          label.form-label(for="email") Имейл
+          label.form-label(for="email") Имейл адрес
           input.form-control(type='email', name='email', id="email", placeholder="Въведете вашия имейл", required)
+          i.fas.fa-envelope.input-icon
         
         .form-group
           label.form-label(for="password") Парола
           input.form-control(type='password', name='password', id="password", placeholder="Въведете парола", required)
+          i.fas.fa-lock.input-icon
         
-        button.btn-register(type='submit') Регистрирай се
+        button.btn-register(type='submit')
+          i.fas.fa-user-plus
+          |  Регистрирай се
+        
+        .form-footer
+          p Регистрирайки се, вие се съгласявате с нашите 
+            a(href="#") Условия за ползване
+            |  и 
+            a(href="#") Политика за поверителност
       
       .login-link
         | Вече имате акаунт? 
         a(href='/login') Влезте оттук
+      
+      .social-login
+        p Или се регистрирайте с:
+        .social-btn
+          i.fab.fa-google
+        .social-btn
+          i.fab.fa-facebook-f
+        .social-btn
+          i.fab.fa-github
