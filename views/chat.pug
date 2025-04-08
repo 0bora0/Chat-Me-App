@@ -12,6 +12,16 @@ html
         border-radius: 4px;
         padding: 10px;
       }
+      #userList {
+        list-style-type: none;
+        padding: 0;
+        margin: 10px 0;
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+      }
       #messageForm {
         margin-top: 20px;
         display: flex;
@@ -22,12 +32,26 @@ html
         border: 1px solid #ddd;
         border-radius: 4px;
       }
+      #privateMessageForm {
+        margin-top: 20px;
+        display: flex;
+      }
+      #privateMessageInput {
+        flex-grow: 1;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
   body
     h1 Чат система
-    ul#messages
+    ul#messages  // This is where messages will be appended
+    ul#userList  // This is where the user list will be appended
     form#messageForm
       input#messageInput(type="text", placeholder="Напишете съобщение...", autocomplete="off")
       button(type="submit") Изпрати
+    form#privateMessageForm
+      input#privateMessageInput(type="text", placeholder="Частно съобщение...", autocomplete="off")
+      button(type="submit") Изпрати частно съобщение
 
     script(src="https://cdn.socket.io/4.0.1/socket.io.min.js")
     script(src="/js/chat.js")

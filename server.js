@@ -33,7 +33,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
-// Настройка на Pug като шаблонен двигател
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
@@ -145,31 +144,59 @@ const wrap = middleware => (socket, next) => middleware(socket.request, {}, next
 io.use(wrap(sessionMiddleware));
 
 io.on("connection", async (socket) => {
-  if (!socket.request.session.user) {
+  const user = socket.request.session.user;
+
+  if (!user) {
     console.log("Неавтентикиран потребител - изключване");
     return socket.disconnect(true);
   }
 
-  const user = socket.request.session.user;
   console.log(`${user.username} се присъедини към чата`);
 
-  const messages = await Message.find().populate("user", "username").sort({ timestamp: -1 }).limit(50);
+  // Изпращане на история на съобщенията
+  const messages = await Message.find().populate("user", "username").sort({ timestamp: 1 }).limit(50);
   socket.emit("message history", messages.reverse());
 
-  socket.on('chatMessage', (messageData) => {
-    const messageText = messageData.text;  
+  // Изпращане на списък с всички регистрирани потребители
+  const users = await User.find();
+  socket.emit("userList", users);
+
+  // Съобщения от потребителите
+  socket.on("chatMessage", async (messageData) => {
+    const messageText = messageData.text;
+    const timestamp = new Date(messageData.timestamp);
+
     const message = new Message({
       text: messageText,
-      timestamp: messageData.timestamp, 
+      timestamp: timestamp,
+      user: user._id
     });
 
-    message.save((err) => {
-      if (err) {
-        console.warn('Error saving message:', err);
-      } else {
-        console.log('Message saved');
-      }
-    });
+    try {
+      const savedMessage = await message.save();
+      console.log("Message saved");
+
+      // Изпращане на съобщението към всички
+      io.emit("newMessage", {
+        text: savedMessage.text,
+        timestamp: savedMessage.timestamp.toLocaleTimeString(),
+        user: { username: user.username }
+      });
+    } catch (err) {
+      console.warn("Error saving message:", err);
+    }
+  });
+
+  // Приватно съобщение
+  socket.on("privateMessage", (data) => {
+    const targetUserSocket = io.sockets.sockets.get(data.targetUserSocketId);
+    if (targetUserSocket) {
+      targetUserSocket.emit("privateMessage", {
+        text: data.text,
+        timestamp: new Date().toLocaleTimeString(),
+        from: user.username
+      });
+    }
   });
 
   socket.on("disconnect", () => {
