@@ -1,4 +1,4 @@
-# Chat Notes App
+# Chat-Me-App
 
 A real-time chat application built with Node.js, Express.js, MongoDB, Socket.io, and PugJS. The app allows users to register, log in, join chat rooms, and exchange messages in real-time.
 
