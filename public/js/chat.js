@@ -26,20 +26,21 @@ function createMessageElement(message, isPrivate = false, isSent = false) {
   const messageElement = document.createElement('li');
   const isMyMessage = isCurrentUser(message.user?._id || message.fromId);
   
-  if (isPrivate) {
-    messageElement.className = isSent ? 'my-message private-message' : 'other-message private-message';
-  } else {
-    messageElement.className = isMyMessage ? 'my-message' : 'other-message';
-  }
-
+  let messageClass = isMyMessage ? 'my-message' : 'other-message';
+  if (isPrivate) messageClass += ' private-message';
+  
+  messageElement.className = `message ${messageClass}`;
+  
   const username = isPrivate 
     ? (isSent ? `(Частно до ${message.to})` : `(Частно от ${message.from})`)
     : message.user?.username;
 
   messageElement.innerHTML = `
-    <div class="message-username">${username}</div>
-    ${message.text}
-    <span class="message-time">${message.timestamp}</span>
+    <div class="message-header">
+      <div class="message-username">${username}</div>
+      <div class="message-time">${message.timestamp}</div>
+    </div>
+    <div class="message-content">${message.text}</div>
   `;
 
   return messageElement;
@@ -61,38 +62,54 @@ function scrollToBottom() {
   }
 }
 
+function updateUserStatus(onlineUserIds) {
+  const userItems = document.querySelectorAll('.user-item');
+  userItems.forEach(item => {
+    const userId = item.dataset.userId;
+    const statusIndicator = item.querySelector('.user-status');
+    const statusText = item.querySelector('.user-status-text');
+    
+    if (onlineUserIds.includes(userId)) {
+      statusIndicator.classList.add('online');
+      statusIndicator.classList.remove('offline');
+      statusText.textContent = 'онлайн';
+    } else {
+      statusIndicator.classList.add('offline');
+      statusIndicator.classList.remove('online');
+      statusText.textContent = 'офлайн';
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initializeCurrentUser();
   
-  socket.on('onlineUsers', (users) => {
-    const onlineUsersList = document.getElementById('onlineUsers');
-    if (!onlineUsersList) return;
+  document.getElementById('logoutBtn')?.addEventListener('click', () => {
+    window.location.href = '/logout';
+  });
+  
+  document.querySelector('.search-input')?.addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const userItems = document.querySelectorAll('.user-item');
     
-    onlineUsersList.innerHTML = '';
-    
-    users.forEach(user => {
-      if (user.id !== currentUser._id) {
-        const userItem = document.createElement('li');
-        userItem.className = 'user-item';
-        userItem.innerHTML = `
-          <span class="user-status online"></span>
-          <span>${user.username}</span>
-        `;
-        
-        userItem.addEventListener('click', () => {
-          document.querySelectorAll('.user-item').forEach(item => {
-            item.classList.remove('active');
-          });
-          
-          userItem.classList.add('active');
-          startPrivateChat(user.id, user.username);
-        });
-        
-        onlineUsersList.appendChild(userItem);
+    userItems.forEach(item => {
+      const username = item.querySelector('.user-name').textContent.toLowerCase();
+      if (username.includes(searchTerm)) {
+        item.style.display = 'flex';
+      } else {
+        item.style.display = 'none';
       }
     });
   });
-
+  
+  socket.on('onlineUsers', (users) => {
+    console.log('Online users:', users);
+  });
+  
+  socket.on('userStatusUpdate', (onlineUserIds) => {
+    updateUserStatus(onlineUserIds);
+  });
+  
   socket.on('messageHistory', (messages) => {
     const messagesList = document.getElementById('messages');
     if (!messagesList) return;
@@ -103,19 +120,19 @@ document.addEventListener('DOMContentLoaded', () => {
       addMessageToChat(message);
     });
   });
-
+  
   socket.on('newMessage', (message) => {
     addMessageToChat(message);
   });
-
+  
   socket.on('privateMessage', (message) => {
     addMessageToChat(message, true);
   });
-
+  
   socket.on('privateMessageSent', (message) => {
     addMessageToChat(message, true, true);
   });
-
+  
   document.getElementById('messageForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const messageInput = document.getElementById('messageInput');
@@ -129,30 +146,18 @@ document.addEventListener('DOMContentLoaded', () => {
       messageInput.value = '';
     }
   });
-
-  document.getElementById('privateMessageForm')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const privateMessageInput = document.getElementById('privateMessageInput');
-    const messageText = privateMessageInput?.value.trim();
-
-    if (messageText && privateChatUserId) {
-      socket.emit('privateMessage', {
-        targetUserId: privateChatUserId,
-        text: messageText
+  
+  document.querySelectorAll('.user-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const userId = item.dataset.userId;
+      const username = item.querySelector('.user-name').textContent;
+      
+      document.querySelectorAll('.user-item').forEach(i => {
+        i.classList.remove('active');
       });
-      privateMessageInput.value = '';
-    }
+      item.classList.add('active');
+      
+      console.log(`Избран потребител: ${username} (${userId})`);
+    });
   });
 });
-
-function startPrivateChat(userId, username) {
-  privateChatUserId = userId;
-  const privateForm = document.getElementById('privateMessageForm');
-  const privateChatWith = document.getElementById('privateChatWith');
-  
-  if (privateForm && privateChatWith) {
-    privateForm.classList.remove('d-none');
-    privateChatWith.textContent = username;
-    document.getElementById('privateMessageInput').focus();
-  }
-}

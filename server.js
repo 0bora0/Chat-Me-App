@@ -69,10 +69,20 @@ app.get("/", (req, res) => {
 
 app.get("/chat", requireLogin, async (req, res) => {
   try {
-    const messages = await Message.find().populate("user", "username").sort({ timestamp: 1 }).limit(50);
+    const messages = await Message.find().populate("user", "username").sort({ timestamp: -1 }).limit(50);
+    const allUsers = await User.find().sort({ username: 1 });
+    
+    // Маркираме кои потребители са онлайн
+    const onlineUserIds = Array.from(connectedUsers.values()).map(u => u.id.toString());
+    const usersWithStatus = allUsers.map(user => ({
+      ...user.toObject(),
+      online: onlineUserIds.includes(user._id.toString())
+    }));
+
     res.render("chat", { 
       user: req.session.user, 
-      messages: messages.reverse() 
+      messages: messages.reverse(),
+      allUsers: usersWithStatus
     });
   } catch (err) {
     console.error("Грешка при зареждане на чата:", err);
@@ -80,7 +90,6 @@ app.get("/chat", requireLogin, async (req, res) => {
   }
 });
 
-// ... (останалите route handlers остават същите) ...
 
 const connectedUsers = new Map();
 
@@ -95,7 +104,6 @@ io.on("connection", async (socket) => {
     return socket.disconnect(true);
   }
 
-  // Добавяне на потребителя към списъка с онлайн потребители
   connectedUsers.set(socket.id, {
     id: user._id,
     username: user.username,
@@ -104,14 +112,11 @@ io.on("connection", async (socket) => {
 
   console.log(`${user.username} се присъедини към чата`);
 
-  // Изпращане на актуализиран списък с онлайн потребители
-  io.emit("onlineUsers", Array.from(connectedUsers.values()));
+  updateOnlineUsers();
 
-  // Изпращане на история на съобщенията
   const messages = await Message.find().populate("user", "username").sort({ timestamp: -1 }).limit(50);
   socket.emit("messageHistory", messages);
 
-  // Съобщения от потребителите
   socket.on("chatMessage", async (messageData) => {
     const messageText = messageData.text.trim();
     if (!messageText) return;
@@ -126,7 +131,6 @@ io.on("connection", async (socket) => {
     try {
       const savedMessage = await message.save();
       
-      // Изпращане на съобщението към всички
       io.emit("newMessage", {
         text: savedMessage.text,
         timestamp: savedMessage.timestamp.toLocaleTimeString(),
@@ -140,7 +144,7 @@ io.on("connection", async (socket) => {
     }
   });
 
-  // Приватно съобщение
+ 
   socket.on("privateMessage", (data) => {
     const messageText = data.text.trim();
     if (!messageText || !data.targetUserId) return;
@@ -152,7 +156,6 @@ io.on("connection", async (socket) => {
       if (targetUserSocket) {
         const timestamp = new Date();
         
-        // Изпращане до получателя
         targetUserSocket.emit("privateMessage", {
           text: messageText,
           timestamp: timestamp.toLocaleTimeString(),
@@ -160,7 +163,6 @@ io.on("connection", async (socket) => {
           fromId: user._id
         });
         
-        // Изпращане на копие до изпращача
         socket.emit("privateMessageSent", {
           text: messageText,
           timestamp: timestamp.toLocaleTimeString(),
@@ -174,8 +176,16 @@ io.on("connection", async (socket) => {
   socket.on("disconnect", () => {
     console.log(`${user.username} напусна чата`);
     connectedUsers.delete(socket.id);
-    io.emit("onlineUsers", Array.from(connectedUsers.values()));
+    updateOnlineUsers();
   });
+
+  function updateOnlineUsers() {
+    const onlineUsers = Array.from(connectedUsers.values());
+    io.emit("onlineUsers", onlineUsers);
+    
+    const onlineUserIds = onlineUsers.map(u => u.id.toString());
+    io.emit("userStatusUpdate", onlineUserIds);
+  }
 });
 
 const PORT = process.env.PORT || 3000;
