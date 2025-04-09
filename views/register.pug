@@ -17,25 +17,29 @@ block content
       form.register-form(method='POST' action='/register')
         .form-group
           label.form-label(for="username") Потребителско име
-          input.form-control(type='text', name='username', id="username", placeholder="Въведете потребителско име", required)
-          i.fas.fa-user.input-icon
+          .input-wrapper
+            input.form-control(type='text', name='username', id="username", placeholder="Въведете потребителско име", required)
+            i.fas.fa-user.input-icon
         
         .form-group
-          label.form-label(for="name") Пълно име
-          input.form-control(type='text', name='name', id="name", placeholder="Въведете вашето име", required)
-          i.fas.fa-id-card.input-icon
+          label.form-label(for="name") Име
+          .input-wrapper
+            input.form-control(type='text', name='name', id="name", placeholder="Въведете вашето име", required)
+            i.fas.fa-id-card.input-icon
         
         .form-group
           label.form-label(for="email") Имейл адрес
-          input.form-control(type='email', name='email', id="email", placeholder="Въведете вашия имейл", required)
-          i.fas.fa-envelope.input-icon
+          .input-wrapper
+            input.form-control(type='email', name='email', id="email", placeholder="Въведете вашия имейл", required)
+            i.fas.fa-envelope.input-icon
         
         .form-group
           label.form-label(for="password") Парола
-          input.form-control(type='password', name='password', id="password", placeholder="Въведете парола", required)
-          i.fas.fa-lock.input-icon
-          span.password-toggle#togglePassword
-            i.fas.fa-eye
+          .input-wrapper
+            input.form-control(type='password', name='password', id="password", placeholder="Въведете парола", required)
+            i.fas.fa-lock.input-icon
+            span.password-toggle#togglePassword
+              i.fas.fa-eye
         
         button.btn-register(type='submit')
           i.fas.fa-user-plus
@@ -80,7 +84,6 @@ block content
         });
       }
       
-      // Close alert messages
       const closeButtons = document.querySelectorAll('.close');
       closeButtons.forEach(button => {
         button.addEventListener('click', function() {

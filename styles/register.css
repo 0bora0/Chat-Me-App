@@ -140,7 +140,7 @@ body {
 
 .form-control {
   width: 100%;
-  padding: 0.9rem 1.25rem 0.9rem 3rem;
+  padding: 0.9rem 1.25rem 0.9rem 3.2rem;
   font-size: 1rem;
   border: 2px solid #e9ecef;
   border-radius: 10px;
@@ -148,6 +148,7 @@ body {
   background-color: white;
   box-shadow: var(--shadow-sm);
   font-family: "Poppins", sans-serif;
+  height: 50px;
 }
 
 .form-control:focus {
@@ -168,8 +169,14 @@ body {
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-light);
-  font-size: 1rem;
+  font-size: 1.1rem;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: var(--transition);
+  pointer-events: none;
 }
 
 .form-control:focus + .input-icon {
@@ -182,9 +189,14 @@ body {
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-light);
-  font-size: 1rem;
+  font-size: 1.1rem;
   cursor: pointer;
   transition: var(--transition);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .password-toggle:hover {
@@ -372,97 +384,24 @@ body {
   border: none;
   cursor: pointer;
 }
-.form-group {
-  position: relative;
-  margin-bottom: 1.5rem;
-}
-
-.form-control {
-  width: 100%;
-  padding: 0.9rem 1.25rem 0.9rem 3rem; 
-  font-size: 1rem;
-  border: 2px solid #e9ecef;
-  border-radius: 10px;
-  transition: var(--transition);
-  background-color: white;
-  box-shadow: var(--shadow-sm);
-  font-family: "Poppins", sans-serif;
-  height: 50px;
-}
-
-.input-icon {
-  position: absolute;
-  left: 1.25rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-light);
-  font-size: 1.1rem; 
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition);
-  pointer-events: none; 
-}
-
-.password-toggle {
-  position: absolute;
-  right: 1.25rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-light);
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: var(--transition);
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.password-toggle:hover {
-  color: var(--primary-color);
-}
-
-.form-control:focus + .input-icon,
-.form-control:focus ~ .password-toggle {
-  color: var(--primary-color);
-  transform: translateY(-50%) scale(1.1);
-}
-
 .fa-user {
-  margin-left: 1px; 
+  margin-top: 17px;
 }
 
 .fa-envelope {
-  margin-left: 2px;
+  margin-top: 18px;
 }
-
+.fa-id-card {
+  margin-top: 18px;
+}
 .fa-lock {
-  margin-left: 1px;
+  margin-top: 17px;
 }
 
 .fa-eye,
 .fa-eye-slash {
-  right: 1.5rem;
-}
-
-@media (max-width: 576px) {
-  .form-control {
-    padding-left: 2.8rem;
-  }
-
-  .input-icon {
-    left: 1rem;
-    font-size: 1rem;
-  }
-
-  .password-toggle {
-    right: 1rem;
-    font-size: 1rem;
-  }
+  margin-top: 30px;
+  right: 1.25rem;
 }
 
 @media (max-width: 576px) {
