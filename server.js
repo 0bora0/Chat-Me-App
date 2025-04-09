@@ -185,29 +185,29 @@ io.on("connection", async (socket) => {
   socket.on("chatMessage", async (messageData) => {
     const messageText = messageData.text.trim();
     if (!messageText) return;
-
-    const timestamp = new Date();
+  
     const message = new Message({
       text: messageText,
-      timestamp: timestamp,
-      user: user._id,
+      timestamp: new Date(),
+      user: user._id
     });
-
+  
     try {
       const savedMessage = await message.save();
-
+      console.log("💾 Съобщение записано:", savedMessage); 
       io.emit("newMessage", {
         text: savedMessage.text,
         timestamp: savedMessage.timestamp.toLocaleTimeString(),
         user: {
           _id: user._id,
-          username: user.username,
-        },
+          username: user.username
+        }
       });
     } catch (err) {
       console.error("Грешка при запазване на съобщение:", err);
     }
   });
+  
 
   socket.on("privateMessage", (data) => {
     const messageText = data.text.trim();

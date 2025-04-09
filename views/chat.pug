@@ -26,8 +26,9 @@ html(lang="bg")
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         background-color: #f5f7fb;
         color: var(--dark-color);
-        min-height: 100vh;
         margin: 0;
+        height: 100vh;
+        overflow: hidden;
       }
 
       .app-container {
@@ -42,7 +43,6 @@ html(lang="bg")
         display: flex;
         flex-direction: column;
         border-right: 1px solid rgba(0,0,0,0.1);
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
       }
 
       .sidebar-header {
@@ -138,7 +138,6 @@ html(lang="bg")
 
       .online {
         background-color: #28a745;
-        box-shadow: 0 0 5px #4ade80;
       }
 
       .offline {
@@ -149,6 +148,8 @@ html(lang="bg")
         flex: 1;
         display: flex;
         flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
       }
 
       .chat-header {
@@ -158,7 +159,6 @@ html(lang="bg")
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
       }
 
       .chat-title {
@@ -179,7 +179,6 @@ html(lang="bg")
         height: 8px;
         border-radius: 50%;
         background-color: #4ade80;
-        animation: pulse 1.5s infinite;
       }
 
       .chat-tabs {
@@ -210,18 +209,23 @@ html(lang="bg")
         flex: 1;
         display: flex;
         flex-direction: column;
+        overflow: hidden;
       }
 
       .chat-box {
         flex: 1;
-        overflow-y: auto;
         padding: 20px;
         background-color: #f8f9fa;
+        overflow-y: auto;
+        scroll-behavior: smooth;
       }
 
       .message-container {
         max-width: 800px;
         margin: 0 auto;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
       }
 
       .message-list {
@@ -231,6 +235,8 @@ html(lang="bg")
         display: flex;
         flex-direction: column;
         gap: 15px;
+        flex: 1;
+        min-height: min-content;
       }
 
       .message {
@@ -239,7 +245,7 @@ html(lang="bg")
         border-radius: 12px;
         line-height: 1.5;
         position: relative;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
       }
 
       .my-message {
@@ -328,30 +334,40 @@ html(lang="bg")
         background-color: var(--primary-hover);
       }
 
-      @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
+      /* Custom scrollbar for chat box */
+      .chat-box::-webkit-scrollbar {
+        width: 8px;
       }
 
-      .users-list::-webkit-scrollbar,
-      .chat-box::-webkit-scrollbar {
+      .chat-box::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.05);
+        border-radius: 4px;
+      }
+
+      .chat-box::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.15);
+        border-radius: 4px;
+      }
+
+      .chat-box::-webkit-scrollbar-thumb:hover {
+        background: rgba(0,0,0,0.25);
+      }
+
+      /* Custom scrollbar for users list */
+      .users-list::-webkit-scrollbar {
         width: 6px;
       }
 
-      .users-list::-webkit-scrollbar-track,
-      .chat-box::-webkit-scrollbar-track {
+      .users-list::-webkit-scrollbar-track {
         background: rgba(255,255,255,0.1);
       }
 
-      .users-list::-webkit-scrollbar-thumb,
-      .chat-box::-webkit-scrollbar-thumb {
+      .users-list::-webkit-scrollbar-thumb {
         background: rgba(255,255,255,0.2);
         border-radius: 3px;
       }
 
-      .users-list::-webkit-scrollbar-thumb:hover,
-      .chat-box::-webkit-scrollbar-thumb:hover {
+      .users-list::-webkit-scrollbar-thumb:hover {
         background: rgba(255,255,255,0.3);
       }
 
