@@ -13,6 +13,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const app = express();
 const server = http.createServer(app);
+const flash = require('express-flash');
 
 const io = socketio(server, {
   cors: {
@@ -34,11 +35,15 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/styles', express.static(path.join(__dirname, 'styles')));
+app.use(flash());
 
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
-
+app.get('/test-css', (req, res) => {
+  res.sendFile(path.join(__dirname, 'styles/chat.css'));
+});
 mongoose
   .connect(mongoURI)
   .then(() => console.log("Свързано с MongoDB"))
@@ -185,57 +190,89 @@ io.on("connection", async (socket) => {
   socket.on("chatMessage", async (messageData) => {
     const messageText = messageData.text.trim();
     if (!messageText) return;
-  
+
     const message = new Message({
       text: messageText,
+      user: user._id,
+      isPrivate: false,
       timestamp: new Date(),
-      user: user._id
     });
-  
+
     try {
       const savedMessage = await message.save();
-      console.log("💾 Съобщение записано:", savedMessage); 
       io.emit("newMessage", {
         text: savedMessage.text,
         timestamp: savedMessage.timestamp.toLocaleTimeString(),
         user: {
           _id: user._id,
-          username: user.username
-        }
+          username: user.username,
+        },
       });
     } catch (err) {
       console.error("Грешка при запазване на съобщение:", err);
     }
   });
-  
 
-  socket.on("privateMessage", (data) => {
+  socket.on("privateMessage", async (data) => {
     const messageText = data.text.trim();
     if (!messageText || !data.targetUserId) return;
 
-    const targetUser = Array.from(connectedUsers.values()).find(
-      (u) => u.id === data.targetUserId
-    );
+    const message = new Message({
+      text: messageText,
+      user: user._id,
+      toUser: data.targetUserId,
+      isPrivate: true,
+      timestamp: new Date(),
+    });
 
-    if (targetUser) {
-      const targetUserSocket = io.sockets.sockets.get(targetUser.socketId);
-      if (targetUserSocket) {
-        const timestamp = new Date();
+    try {
+      const savedMessage = await message.save();
 
-        targetUserSocket.emit("privateMessage", {
-          text: messageText,
-          timestamp: timestamp.toLocaleTimeString(),
-          from: user.username,
-          fromId: user._id,
-        });
+      const targetUser = Array.from(connectedUsers.values()).find(
+        (u) => u.id === data.targetUserId
+      );
 
-        socket.emit("privateMessageSent", {
-          text: messageText,
-          timestamp: timestamp.toLocaleTimeString(),
-          to: targetUser.username,
-          toId: targetUser.id,
-        });
+      if (targetUser) {
+        const targetUserSocket = io.sockets.sockets.get(targetUser.socketId);
+        if (targetUserSocket) {
+          targetUserSocket.emit("privateMessage", {
+            text: savedMessage.text,
+            timestamp: savedMessage.timestamp.toLocaleTimeString(),
+            from: user.username,
+            fromId: user._id,
+          });
+        }
       }
+
+      socket.emit("privateMessageSent", {
+        text: savedMessage.text,
+        timestamp: savedMessage.timestamp.toLocaleTimeString(),
+        to: targetUser?.username || "Unknown",
+        toId: data.targetUserId,
+      });
+    } catch (err) {
+      console.error("Грешка при запазване на частно съобщение:", err);
+    }
+  });
+
+  app.get("/api/message-history", requireLogin, async (req, res) => {
+    try {
+      const userId = req.session.user._id;
+      const groupMessages = await Message.find({
+        $or: [
+          { isPrivate: false },
+          { isPrivate: true, $or: [{ user: userId }, { toUser: userId }] },
+        ],
+      })
+        .populate("user", "username")
+        .populate("toUser", "username")
+        .sort({ timestamp: -1 })
+        .limit(100);
+
+      res.json(groupMessages.reverse());
+    } catch (err) {
+      console.error("Грешка при зареждане на история:", err);
+      res.status(500).json({ error: "Грешка при зареждане на история" });
     }
   });
 

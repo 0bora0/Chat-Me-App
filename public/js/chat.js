@@ -1,12 +1,12 @@
 const socket = io();
 let currentUser = null;
 let activeChats = {};
-let currentChatId = 'group'; 
+let currentChatId = 'group';
 
 function initializeCurrentUser() {
-  const userDataElement = document.getElementById('userData');
-  if (userDataElement && userDataElement.dataset.user) {
-    try {
+  try {
+    const userDataElement = document.getElementById('userData');
+    if (userDataElement && userDataElement.dataset.user) {
       currentUser = JSON.parse(userDataElement.dataset.user);
       console.log(`Текущ потребител: ${currentUser.username}`);
       
@@ -14,12 +14,40 @@ function initializeCurrentUser() {
         type: 'group',
         messages: []
       };
-    } catch (e) {
-      console.error('Грешка при парсване на потребителски данни:', e);
+    } else {
+      console.error('Липсват потребителски данни - пренасочване към вход');
       window.location.href = '/login';
     }
-  } else {
-    console.error('Липсват потребителски данни - пренасочване към вход');
+  } catch (e) {
+    console.error('Грешка при парсване на потребителски данни:', e);
+    window.location.href = '/login';
+  }
+}
+function showErrorAlert(message) {
+  Swal.fire({
+    icon: 'error',
+    title: 'Грешка',
+    text: message,
+    confirmButtonText: 'OK'
+  });
+}
+
+function initializeCurrentUser() {
+  try {
+    const userDataElement = document.getElementById('userData');
+    if (userDataElement && userDataElement.dataset.user) {
+      currentUser = JSON.parse(userDataElement.dataset.user);
+      
+      activeChats['group'] = {
+        type: 'group',
+        messages: []
+      };
+    } else {
+      showErrorAlert('Липсват потребителски данни');
+      window.location.href = '/login';
+    }
+  } catch (e) {
+    showErrorAlert('Грешка при зареждане на потребителски данни');
     window.location.href = '/login';
   }
 }
@@ -38,7 +66,7 @@ function createMessageElement(message, isPrivate = false) {
   messageElement.className = `message ${messageClass}`;
   
   const username = isPrivate 
-    ? (isMyMessage ? `(Частно до ${message.to})` : `(Частно от ${message.from})`)
+    ? (isMyMessage ? `(Съобщение до: ${message.to})` : `Съобщение от: ${message.from}`)
     : message.user?.username;
 
   messageElement.innerHTML = `
@@ -60,22 +88,29 @@ function addMessageToChat(chatId, message, isPrivate = false) {
     };
   }
   
-  activeChats[chatId].messages.push(message);
+  const isDuplicate = activeChats[chatId].messages.some(
+    m => m.text === message.text && 
+         m.timestamp === message.timestamp && 
+         (m.user?._id === message.user?._id || m.fromId === message.fromId)
+  );
   
-  if (chatId === currentChatId) {
-    const messagesList = document.getElementById(`${chatId}Messages`);
-    if (!messagesList) return;
+  if (!isDuplicate) {
+    activeChats[chatId].messages.push(message);
+    
+    if (chatId === currentChatId) {
+      const messagesList = document.getElementById(`${chatId}Messages`);
+      if (!messagesList) return;
 
-    const messageElement = createMessageElement(message, isPrivate);
-    messagesList.appendChild(messageElement);
-    scrollToBottom();
+      const messageElement = createMessageElement(message, isPrivate);
+      messagesList.appendChild(messageElement);
+      scrollToBottom();
+    }
   }
 }
 
 function switchChat(chatId) {
   currentChatId = chatId;
-  
-  document.querySelectorAll('.message-list').forEach(list => {
+    document.querySelectorAll('.message-list').forEach(list => {
     list.style.display = 'none';
   });
   
@@ -97,6 +132,7 @@ function switchChat(chatId) {
     }
   }
 
+  // Update active tab
   document.querySelectorAll('.chat-tab').forEach(tab => {
     tab.classList.remove('active');
     if (tab.dataset.tab === chatId) {
@@ -104,7 +140,8 @@ function switchChat(chatId) {
     }
   });
 
-  document.getElementById('messageInput').focus();
+  // Focus input
+  document.getElementById('messageInput')?.focus();
 }
 
 function addChatTab(chatId, chatName) {
@@ -123,9 +160,7 @@ function addChatTab(chatId, chatName) {
       <i class="fas fa-times"></i>
     </span>
   `;
-  
   tab.addEventListener('click', () => switchChat(chatId));
-
   tab.querySelector('.chat-tab-close').addEventListener('click', (e) => {
     e.stopPropagation();
     closeChatTab(chatId);
@@ -151,7 +186,10 @@ function closeChatTab(chatId) {
 function scrollToBottom() {
   const chatBox = document.querySelector('.chat-box');
   if (chatBox) {
-    chatBox.scrollTop = chatBox.scrollHeight;
+    chatBox.scrollTo({
+      top: chatBox.scrollHeight,
+      behavior: 'smooth'
+    });
   }
 }
 
@@ -174,8 +212,74 @@ function updateUserStatus(onlineUserIds) {
   });
 }
 
+async function loadMessageHistory() {
+  try {
+    const response = await fetch('/api/message-history');
+    if (!response.ok) throw new Error('Network response was not ok');
+    
+    const messages = await response.json();
+    const chats = {};
+    
+    messages.forEach(message => {
+      let chatId;
+      
+      if (!message.isPrivate) {
+        chatId = 'group';
+      } else {
+        const otherUserId = isCurrentUser(message.user._id) 
+          ? message.toUser?._id 
+          : message.user._id;
+        chatId = `private_${otherUserId}`;
+      }
+      
+      if (!chats[chatId]) {
+        chats[chatId] = {
+          type: chatId === 'group' ? 'group' : 'private',
+          messages: []
+        };
+      }
+      
+      chats[chatId].messages.push(message);
+    });
+    
+    Object.keys(chats).forEach(chatId => {
+      activeChats[chatId] = chats[chatId];
+      
+      if (chatId !== 'group') {
+        const otherUser = chats[chatId].messages.find(m => 
+          m.user._id !== currentUser._id
+        )?.user;
+        
+        if (otherUser) {
+          addChatTab(chatId, otherUser.username);
+        }
+      }
+      
+      chats[chatId].messages.forEach(message => {
+        addMessageToChat(
+          chatId, 
+          {
+            text: message.text,
+            timestamp: new Date(message.timestamp).toLocaleTimeString(),
+            user: message.user,
+            from: message.user?.username,
+            fromId: message.user?._id,
+            to: message.toUser?.username,
+            toId: message.toUser?._id
+          },
+          message.isPrivate
+        );
+      });
+    });
+    
+  } catch (error) {
+    console.error('Грешка при зареждане на история:', error);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initializeCurrentUser();
+  loadMessageHistory();
 
   document.getElementById('logoutBtn')?.addEventListener('click', () => {
     window.location.href = '/logout';
@@ -187,11 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     userItems.forEach(item => {
       const username = item.querySelector('.user-name').textContent.toLowerCase();
-      if (username.includes(searchTerm)) {
-        item.style.display = 'flex';
-      } else {
-        item.style.display = 'none';
-      }
+      item.style.display = username.includes(searchTerm) ? 'flex' : 'none';
     });
   });
 
@@ -199,11 +299,11 @@ document.addEventListener('DOMContentLoaded', () => {
     item.addEventListener('click', () => {
       const userId = item.dataset.userId;
       const username = item.querySelector('.user-name').textContent;
-
       const chatId = `private_${userId}`;
       
       addChatTab(chatId, username);
 
+      // Update active user
       document.querySelectorAll('.user-item').forEach(i => {
         i.classList.remove('active');
       });
@@ -219,8 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (messageText) {
       if (currentChatId === 'group') {
         socket.emit('chatMessage', {
-          text: messageText,
-          timestamp: new Date()
+          text: messageText
         });
       } else {
         const targetUserId = currentChatId.split('_')[1];
@@ -253,11 +352,17 @@ document.addEventListener('DOMContentLoaded', () => {
   
   socket.on('privateMessage', (message) => {
     const chatId = `private_${message.fromId}`;
-    addMessageToChat(chatId, {...message, to: currentUser.username}, true);
+    addMessageToChat(chatId, {
+      ...message,
+      to: currentUser.username
+    }, true);
   });
   
   socket.on('privateMessageSent', (message) => {
     const chatId = `private_${message.toId}`;
-    addMessageToChat(chatId, {...message, from: currentUser.username}, true);
+    addMessageToChat(chatId, {
+      ...message,
+      from: currentUser.username
+    }, true);
   });
 });
