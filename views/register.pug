@@ -20,11 +20,19 @@ block content
     }
     
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     
     body {
       font-family: 'Poppins', sans-serif;
       background-color: var(--bg-dark);
-      background-image: url('https://images.unsplash.com/photo-1518655048521-f130df041f66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+      background-image: linear-gradient(rgba(26, 26, 46, 0.9), rgba(26, 26, 46, 0.9)), 
+                        url('https://images.unsplash.com/photo-1518655048521-f130df041f66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
@@ -33,13 +41,13 @@ block content
       align-items: center;
       justify-content: center;
       color: var(--text-dark);
-      margin: 0;
       padding: 2rem;
+      line-height: 1.6;
     }
     
     .register-container {
       width: 100%;
-      max-width: 480px;
+      max-width: 500px;
       margin: 0 auto;
       animation: fadeIn 0.6s ease-out;
     }
@@ -57,6 +65,7 @@ block content
       transition: var(--transition);
       position: relative;
       z-index: 1;
+      backdrop-filter: blur(5px);
     }
     
     .register-card::before {
@@ -81,7 +90,7 @@ block content
     .register-header h1 {
       font-weight: 700;
       color: var(--primary-color);
-      margin: 0;
+      margin: 0 0 0.5rem;
       font-size: 2.2rem;
       letter-spacing: -0.5px;
       position: relative;
@@ -100,18 +109,24 @@ block content
       border-radius: 2px;
     }
     
+    .register-header p {
+      color: var(--text-medium);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    
     .register-form {
-      padding: 0 2.5rem 2.5rem;
+      padding: 0 2.5rem 2rem;
     }
     
     .form-group {
-      margin-bottom: 1.75rem;
+      margin-bottom: 1.5rem;
       position: relative;
     }
     
     .form-label {
       display: block;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
       font-weight: 600;
       color: var(--text-medium);
       font-size: 0.95rem;
@@ -120,13 +135,14 @@ block content
     
     .form-control {
       width: 100%;
-      padding: 1rem 1.25rem;
+      padding: 0.9rem 1.25rem 0.9rem 3rem;
       font-size: 1rem;
       border: 2px solid #e9ecef;
       border-radius: 10px;
       transition: var(--transition);
       background-color: white;
       box-shadow: var(--shadow-sm);
+      font-family: 'Poppins', sans-serif;
     }
     
     .form-control:focus {
@@ -143,16 +159,36 @@ block content
     
     .input-icon {
       position: absolute;
+      left: 1.25rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+      font-size: 1rem;
+      transition: var(--transition);
+    }
+    
+    .form-control:focus + .input-icon {
+      color: var(--primary-color);
+    }
+    
+    .password-toggle {
+      position: absolute;
       right: 1.25rem;
       top: 50%;
       transform: translateY(-50%);
       color: var(--text-light);
-      font-size: 1.1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    
+    .password-toggle:hover {
+      color: var(--primary-color);
     }
     
     .btn-register {
       width: 100%;
-      padding: 1.1rem;
+      padding: 1rem;
       font-size: 1rem;
       font-weight: 600;
       color: white;
@@ -162,11 +198,15 @@ block content
       cursor: pointer;
       transition: var(--transition);
       text-transform: uppercase;
-      letter-spacing: 1.5px;
-      margin-top: 1rem;
+      letter-spacing: 1px;
+      margin-top: 0.5rem;
       box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
       position: relative;
       overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
     }
     
     .btn-register::after {
@@ -184,6 +224,7 @@ block content
     .btn-register:hover {
       transform: translateY(-3px);
       box-shadow: 0 8px 25px rgba(67, 97, 238, 0.4);
+      background: linear-gradient(135deg, #3a56d4 0%, #3a2fc0 100%);
     }
     
     .btn-register:hover::after {
@@ -194,9 +235,29 @@ block content
       transform: translateY(0);
     }
     
+    .form-footer {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-light);
+      line-height: 1.5;
+    }
+    
+    .form-footer a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+    
+    .form-footer a:hover {
+      color: var(--secondary-color);
+      text-decoration: underline;
+    }
+    
     .login-link {
       text-align: center;
-      margin-top: 2rem;
+      margin: 1.5rem 0;
       font-size: 0.95rem;
       color: var(--text-medium);
     }
@@ -207,45 +268,45 @@ block content
       font-weight: 600;
       transition: var(--transition);
       position: relative;
-      padding-bottom: 2px;
-    }
-    
-    .login-link a::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 0;
-      height: 2px;
-      background: var(--secondary-color);
-      transition: var(--transition);
     }
     
     .login-link a:hover {
       color: var(--secondary-color);
+      text-decoration: underline;
     }
     
-    .login-link a:hover::after {
-      width: 100%;
-    }
-    
-    .form-footer {
-      margin-top: 2.5rem;
-      text-align: center;
-      font-size: 0.9rem;
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 1.5rem 0;
       color: var(--text-light);
+      font-size: 0.9rem;
+    }
+    
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #e9ecef;
+    }
+    
+    .divider::before {
+      margin-right: 1rem;
+    }
+    
+    .divider::after {
+      margin-left: 1rem;
     }
     
     .social-login {
       display: flex;
       justify-content: center;
       gap: 1rem;
-      margin-top: 1.5rem;
+      margin-bottom: 1.5rem;
     }
     
     .social-btn {
-      width: 40px;
-      height: 40px;
+      width: 45px;
+      height: 45px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -255,12 +316,27 @@ block content
       border: 1px solid #e9ecef;
       transition: var(--transition);
       box-shadow: var(--shadow-sm);
+      font-size: 1.1rem;
     }
     
     .social-btn:hover {
       transform: translateY(-3px);
       box-shadow: var(--shadow-md);
-      color: var(--primary-color);
+    }
+    
+    .social-btn.google:hover {
+      color: #DB4437;
+      border-color: #DB4437;
+    }
+    
+    .social-btn.facebook:hover {
+      color: #4267B2;
+      border-color: #4267B2;
+    }
+    
+    .social-btn.github:hover {
+      color: #333;
+      border-color: #333;
     }
     
     @media (max-width: 576px) {
@@ -285,8 +361,12 @@ block content
         padding: 0 1.5rem 1.5rem;
       }
       
-      .btn-register {
-        padding: 1rem;
+      .form-control {
+        padding-left: 2.8rem;
+      }
+      
+      .input-icon {
+        left: 1rem;
       }
     }
 
@@ -294,7 +374,7 @@ block content
     .register-card
       .register-header
         h1 Регистрация
-        p Създайте своя акаунт за да продължите
+        p Създайте своя акаунт, за да продължите
       
       form.register-form(method='POST' action='/register')
         .form-group
@@ -316,10 +396,12 @@ block content
           label.form-label(for="password") Парола
           input.form-control(type='password', name='password', id="password", placeholder="Въведете парола", required)
           i.fas.fa-lock.input-icon
+          span.password-toggle#togglePassword
+            i.fas.fa-eye
         
         button.btn-register(type='submit')
           i.fas.fa-user-plus
-          |  Регистрирай се
+          | Регистрирай се
         
         .form-footer
           p Регистрирайки се, вие се съгласявате с нашите 
@@ -327,15 +409,27 @@ block content
             |  и 
             a(href="#") Политика за поверителност
       
+      .divider или
+      
+      .social-login
+        .social-btn.google
+          i.fab.fa-google
+        .social-btn.facebook
+          i.fab.fa-facebook-f
+        .social-btn.github
+          i.fab.fa-github
+      
       .login-link
         | Вече имате акаунт? 
         a(href='/login') Влезте оттук
-      
-      .social-login
-        p Или се регистрирайте с:
-        .social-btn
-          i.fab.fa-google
-        .social-btn
-          i.fab.fa-facebook-f
-        .social-btn
-          i.fab.fa-github
+
+  script.
+    // Toggle password visibility
+    const togglePassword = document.querySelector('#togglePassword');
+    const password = document.querySelector('#password');
+    
+    togglePassword.addEventListener('click', function() {
+      const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+      password.setAttribute('type', type);
+      this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+    });

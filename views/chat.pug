@@ -333,6 +333,7 @@ html(lang="bg")
         50% { opacity: 0.5; }
         100% { opacity: 1; }
       }
+
       .users-list::-webkit-scrollbar,
       .chat-box::-webkit-scrollbar {
         width: 6px;
@@ -354,18 +355,17 @@ html(lang="bg")
         background: rgba(255,255,255,0.3);
       }
 
-      /* Адаптивни стилове */
       @media (max-width: 768px) {
         .app-container {
           flex-direction: column;
         }
-
+        
         .sidebar {
           width: 100%;
           height: auto;
           max-height: 200px;
         }
-
+        
         .chat-header {
           padding: 10px 15px;
         }
@@ -381,44 +381,55 @@ html(lang="bg")
             .user-name= user.username
           button.logout-btn#logoutBtn(title="Изход")
             i.fas.fa-sign-out-alt
-
+        
         .search-container
           input.search-input(type="text" placeholder="Търсене на потребители...")
-
+        
         .users-list#usersList
           if allUsers && allUsers.length
-            each user in allUsers
-              .user-item(data-user-id=user._id)
-                .user-status(class=user.online ? 'online' : 'offline')
-                .user-info
-                  span= user.username
+            each userItem in allUsers
+              if userItem._id.toString() !== user._id.toString()
+                .user-item(data-user-id=userItem._id)
+                  .user-status(class=userItem.online ? 'online' : 'offline')
+                  .user-info
+                    .user-name= userItem.username
+                    .user-status-text= userItem.online ? 'онлайн' : 'офлайн'
           else
-            p Няма налични потребители.
-
-            .user-item(data-user-id=user._id)
-              .user-status(class=user.online ? 'online' : 'offline')
-              .user-info
-                .user-name= user.username
-                .user-status-text= user.online ? 'онлайн' : 'офлайн'
-
+            .no-users Списъкът с потребители е празен
+      
       .chat-container
         .chat-header
           .chat-title Групов чат
           .chat-status
             span.status-indicator
-            | Свързан
-        .chat-tabs
-          .chat-tab.active История
+            span Онлайн
+        
+        .chat-tabs#chatTabs
+          .chat-tab.active(data-tab="group")
+            | Групов чат
+            span.chat-tab-close
+              i.fas.fa-times
+        
         .chat-content
           .chat-box
-            .message-list
-              each message in messages
-                li(class=`message ${message.user === user._id ? 'my-message' : 'other-message'}`)
-
+            .message-container
+              ul.message-list#groupMessages
+                each message in messages
+                  li.message(class=message.user._id.toString() === user._id.toString() ? 'my-message' : 'other-message')
+                    .message-header
+                      .message-username= message.user.username
+                      .message-time= new Date(message.timestamp).toLocaleTimeString()
+                    .message-content= message.text
+        
           .input-area
-            form.message-form(id="sendMessageForm")
-              .form-group
-                input#messageInput(type="text" placeholder="Напишете съобщение..." autocomplete="off")
-                button.send-btn(type="submit")
-                  i.fas.fa-paper-plane
-                  | Изпрати
+            .message-form
+              form#messageForm
+                .form-group
+                  input#messageInput(type="text" placeholder="Напишете съобщение..." autocomplete="off")
+                  button.send-btn(type="submit")
+                    i.fas.fa-paper-plane
+                    span Изпрати
+
+    script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js")
+    script(src="https://cdn.socket.io/4.0.1/socket.io.min.js")
+    script(src="/js/chat.js")

@@ -10,7 +10,7 @@ const User = require("./models/User");
 const Message = require("./models/Message");
 const MongoStore = require("connect-mongo");
 const cors = require("cors");
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 const app = express();
 const server = http.createServer(app);
 
@@ -18,16 +18,19 @@ const io = socketio(server, {
   cors: {
     origin: "http://localhost:3000",
     methods: ["GET", "POST"],
-    credentials: true
-  }
+    credentials: true,
+  },
 });
 
-const mongoURI = "mongodb+srv://120026:bora123@chat-cluster.za6ljq0.mongodb.net/?retryWrites=true&w=majority&appName=chat-cluster";
+const mongoURI =
+  "mongodb+srv://120026:bora123@chat-cluster.za6ljq0.mongodb.net/?retryWrites=true&w=majority&appName=chat-cluster";
 
-app.use(cors({
-  origin: "http://localhost:3000",
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -36,21 +39,22 @@ app.use(express.static(path.join(__dirname, "public")));
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
-mongoose.connect(mongoURI)
+mongoose
+  .connect(mongoURI)
   .then(() => console.log("Свързано с MongoDB"))
-  .catch(err => console.error("Грешка при свързване с MongoDB:", err));
+  .catch((err) => console.error("Грешка при свързване с MongoDB:", err));
 
 const sessionMiddleware = session({
   secret: "chatnotes-secret",
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: mongoURI }),
-  cookie: { 
+  cookie: {
     maxAge: 1000 * 60 * 60,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
-  }
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  },
 });
 
 app.use(sessionMiddleware);
@@ -62,6 +66,61 @@ function requireLogin(req, res, next) {
   next();
 }
 
+app.get("/login", (req, res) => {
+  res.render("login");
+});
+
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return res.status(401).send("Невалиден имейл или парола");
+  }
+
+  req.session.user = {
+    _id: user._id,
+    username: user.username,
+    email: user.email,
+  };
+
+  res.redirect("/chat");
+});
+
+app.get("/register", (req, res) => {
+  res.render("register");
+});
+
+app.post("/register", async (req, res) => {
+  const { username, name, email, password } = req.body;
+
+  const existing = await User.findOne({ email });
+  if (existing) return res.status(400).send("Имейлът вече е използван.");
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const user = new User({
+    username,
+    name,
+    email,
+    password: hashedPassword,
+  });
+
+  await user.save();
+  req.session.user = {
+    _id: user._id,
+    username: user.username,
+    email: user.email,
+  };
+
+  res.redirect("/chat");
+});
+
+app.get("/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.redirect("/login");
+  });
+});
+
 app.get("/", (req, res) => {
   if (!req.session.user) return res.redirect("/login");
   res.redirect("/chat");
@@ -69,20 +128,24 @@ app.get("/", (req, res) => {
 
 app.get("/chat", requireLogin, async (req, res) => {
   try {
-    const messages = await Message.find().populate("user", "username").sort({ timestamp: -1 }).limit(50);
+    const messages = await Message.find()
+      .populate("user", "username")
+      .sort({ timestamp: -1 })
+      .limit(50);
     const allUsers = await User.find().sort({ username: 1 });
-    
-    // Маркираме кои потребители са онлайн
-    const onlineUserIds = Array.from(connectedUsers.values()).map(u => u.id.toString());
-    const usersWithStatus = allUsers.map(user => ({
+
+    const onlineUserIds = Array.from(connectedUsers.values()).map((u) =>
+      u.id.toString()
+    );
+    const usersWithStatus = allUsers.map((user) => ({
       ...user.toObject(),
-      online: onlineUserIds.includes(user._id.toString())
+      online: onlineUserIds.includes(user._id.toString()),
     }));
 
-    res.render("chat", { 
-      user: req.session.user, 
+    res.render("chat", {
+      user: req.session.user,
       messages: messages.reverse(),
-      allUsers: usersWithStatus
+      allUsers: usersWithStatus,
     });
   } catch (err) {
     console.error("Грешка при зареждане на чата:", err);
@@ -90,10 +153,10 @@ app.get("/chat", requireLogin, async (req, res) => {
   }
 });
 
-
 const connectedUsers = new Map();
 
-const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
+const wrap = (middleware) => (socket, next) =>
+  middleware(socket.request, {}, next);
 io.use(wrap(sessionMiddleware));
 
 io.on("connection", async (socket) => {
@@ -107,14 +170,16 @@ io.on("connection", async (socket) => {
   connectedUsers.set(socket.id, {
     id: user._id,
     username: user.username,
-    socketId: socket.id
+    socketId: socket.id,
   });
 
   console.log(`${user.username} се присъедини към чата`);
-
   updateOnlineUsers();
 
-  const messages = await Message.find().populate("user", "username").sort({ timestamp: -1 }).limit(50);
+  const messages = await Message.find()
+    .populate("user", "username")
+    .sort({ timestamp: -1 })
+    .limit(50);
   socket.emit("messageHistory", messages);
 
   socket.on("chatMessage", async (messageData) => {
@@ -125,49 +190,50 @@ io.on("connection", async (socket) => {
     const message = new Message({
       text: messageText,
       timestamp: timestamp,
-      user: user._id
+      user: user._id,
     });
 
     try {
       const savedMessage = await message.save();
-      
+
       io.emit("newMessage", {
         text: savedMessage.text,
         timestamp: savedMessage.timestamp.toLocaleTimeString(),
-        user: { 
+        user: {
           _id: user._id,
-          username: user.username 
-        }
+          username: user.username,
+        },
       });
     } catch (err) {
       console.error("Грешка при запазване на съобщение:", err);
     }
   });
 
- 
   socket.on("privateMessage", (data) => {
     const messageText = data.text.trim();
     if (!messageText || !data.targetUserId) return;
 
-    const targetUser = Array.from(connectedUsers.values()).find(u => u.id === data.targetUserId);
-    
+    const targetUser = Array.from(connectedUsers.values()).find(
+      (u) => u.id === data.targetUserId
+    );
+
     if (targetUser) {
       const targetUserSocket = io.sockets.sockets.get(targetUser.socketId);
       if (targetUserSocket) {
         const timestamp = new Date();
-        
+
         targetUserSocket.emit("privateMessage", {
           text: messageText,
           timestamp: timestamp.toLocaleTimeString(),
           from: user.username,
-          fromId: user._id
+          fromId: user._id,
         });
-        
+
         socket.emit("privateMessageSent", {
           text: messageText,
           timestamp: timestamp.toLocaleTimeString(),
           to: targetUser.username,
-          toId: targetUser.id
+          toId: targetUser.id,
         });
       }
     }
@@ -182,8 +248,8 @@ io.on("connection", async (socket) => {
   function updateOnlineUsers() {
     const onlineUsers = Array.from(connectedUsers.values());
     io.emit("onlineUsers", onlineUsers);
-    
-    const onlineUserIds = onlineUsers.map(u => u.id.toString());
+
+    const onlineUserIds = onlineUsers.map((u) => u.id.toString());
     io.emit("userStatusUpdate", onlineUserIds);
   }
 });
