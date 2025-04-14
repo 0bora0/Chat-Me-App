@@ -18,7 +18,7 @@ const authRoutes = require('./routes/auth');
 
 const mongoURI = process.env.MONGODB_URI || "mongodb+srv://120026:bora123@chat-cluster.za6ljq0.mongodb.net/?retryWrites=true&w=majority&appName=chat-cluster";
 const frontendUrl = process.env.NODE_ENV === 'production' 
-  ? process.env.FRONTEND_URL || 'https://your-render-app.onrender.com'
+  ? process.env.FRONTEND_URL || 'https://chat-me-app-scak.onrender.com'
   : 'http://localhost:3000';
 
 app.set('trust proxy', 1);
