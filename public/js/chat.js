@@ -347,8 +347,31 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   
   socket.on('newMessage', (message) => {
-    addMessageToChat('group', message);
+    const isPrivate = message.isPrivate;
+    let chatId;
+  
+    if (!isPrivate) {
+      chatId = 'group';
+    } else {
+      const otherUserId = isCurrentUser(message.fromId) ? message.toId : message.fromId;
+      chatId = `private_${otherUserId}`;
+      
+      if (!activeChats[chatId]) {
+        addChatTab(chatId, isCurrentUser(message.fromId) ? message.to : message.from);
+      }
+    }
+  
+    addMessageToChat(chatId, {
+      text: message.text,
+      timestamp: new Date().toLocaleTimeString(),
+      user: { _id: message.fromId, username: message.from },
+      from: message.from,
+      fromId: message.fromId,
+      to: message.to,
+      toId: message.toId
+    }, isPrivate);
   });
+  
   
   socket.on('privateMessage', (message) => {
     const chatId = `private_${message.fromId}`;

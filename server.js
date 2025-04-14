@@ -14,7 +14,8 @@ const cookieParser = require("cookie-parser");
 const app = express();
 const server = http.createServer(app);
 const flash = require('express-flash');
-
+const authRoutes = require('./routes/auth');
+app.use('/', authRoutes);
 const io = socketio(server, {
   cors: {
     origin: "http://localhost:3000",
@@ -44,10 +45,9 @@ app.set("views", path.join(__dirname, "views"));
 app.get('/test-css', (req, res) => {
   res.sendFile(path.join(__dirname, 'styles/chat.css'));
 });
-mongoose
-  .connect(mongoURI)
-  .then(() => console.log("Свързано с MongoDB"))
-  .catch((err) => console.error("Грешка при свързване с MongoDB:", err));
+mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 50000 })
+  .then(() => console.log('MongoDB connected'))
+  .catch((err) => console.log('MongoDB connection error:', err));
 
 const sessionMiddleware = session({
   secret: "chatnotes-secret",

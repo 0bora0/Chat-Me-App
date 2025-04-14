@@ -371,7 +371,7 @@ body {
     padding: 10px 15px;
   }
 }
-/* Добавете това във вашия chat.css файл */
+
 .logout-btn {
   background: none;
   border: none;
@@ -392,7 +392,6 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 1rem;
-  background-color: #4361ee;
   color: white;
 }
 
