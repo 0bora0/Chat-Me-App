@@ -81,7 +81,7 @@ function updateOnlineStatus(onlineUsers) {
     statusText.textContent = isOnline ? 'онлайн' : 'офлайн';
   });
   
-  document.getElementById('onlineCount').textContent = ` ${onlineUsers.length-1} онлайн`;
+  document.getElementById('onlineCount').textContent = ` Общо ${onlineUsers.length} потребители онлайн`;
 }
 
 function stringToColor(str) {
