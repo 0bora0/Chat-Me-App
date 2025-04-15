@@ -17,24 +17,36 @@ const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 
-// === CONFIGURATION ===
+// === CONFIG ===
 const mongoURI = process.env.MONGODB_URI || "mongodb+srv://120026:bora123@chat-cluster.za6ljq0.mongodb.net/?retryWrites=true&w=majority&appName=chat-cluster";
 const isProduction = process.env.NODE_ENV === 'production';
 const frontendUrl = isProduction 
   ? process.env.FRONTEND_URL || 'https://chat-me-app-scak.onrender.com'
   : 'http://localhost:3000';
 
-// === APP MIDDLEWARES ===
-app.set("view engine", "pug");
-app.set("views", path.join(__dirname, "views"));
+// ✅ Трябва да е преди session
+app.set('trust proxy', 1);
+
+// === MIDDLEWARES ===
 app.use(express.static(path.join(__dirname, "public")));
 app.use('/styles', express.static(path.join(__dirname, 'styles')));
+app.set("view engine", "pug");
+app.set("views", path.join(__dirname, "views"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(flash());
 
-app.locals.generateColor = function(str) {
+const corsOptions = {
+  origin: frontendUrl,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['set-cookie']
+};
+app.use(cors(corsOptions));
+
+app.locals.generateColor = function (str) {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -43,42 +55,32 @@ app.locals.generateColor = function(str) {
   return `hsl(${hue}, 70%, 60%)`;
 };
 
-const corsOptions = {
-  origin: frontendUrl,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
-app.use(cors(corsOptions));
-
-// === MONGOOSE ===
+// === DATABASE ===
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
+  useUnifiedTopology: true
 })
 .then(() => console.log("✅ MongoDB connected"))
 .catch(err => console.error("❌ MongoDB error:", err));
 
-// === SESSION ===
+// ✅ SESSION
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "chatnotes-secret",
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: mongoURI
-  }),
   proxy: isProduction,
+  store: MongoStore.create({ mongoUrl: mongoURI }),
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 7,
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
-    domain: isProduction ? ".chat-me-app-scak.onrender.com" : undefined
+    sameSite: isProduction ? "none" : "lax"
+    // ❌ Не задавай domain, ако нямаш нужда от поддомейни
   }
 });
 app.use(sessionMiddleware);
 
-// === SOCKET.IO MIDDLEWARE ===
+// === SOCKET.IO SESSION
 const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
 io.use(wrap(sessionMiddleware));
 io.use(wrap(cookieParser()));
@@ -86,9 +88,7 @@ io.use(wrap(cookieParser()));
 const connectedUsers = new Map();
 
 io.on("connection", async (socket) => {
-  const session = socket.request.session;
-  const user = session?.user;
-
+  const user = socket.request?.session?.user;
   if (!user) return socket.disconnect(true);
 
   connectedUsers.set(socket.id, {
@@ -101,9 +101,7 @@ io.on("connection", async (socket) => {
   updateOnlineUsers();
 
   socket.on("requestMessages", async () => {
-    const messages = await Message.find({ isPrivate: false })
-      .populate("user", "username")
-      .sort({ timestamp: 1 });
+    const messages = await Message.find({ isPrivate: false }).populate("user", "username").sort({ timestamp: 1 });
     socket.emit("messageHistory", messages);
   });
 
@@ -123,7 +121,6 @@ io.on("connection", async (socket) => {
       select: 'username'
     });
 
-    // Broadcast to all including sender
     io.emit("newGroupMessage", populated);
   });
 
@@ -139,13 +136,13 @@ io.on("connection", async (socket) => {
   }
 });
 
-// === LOGIN PROTECTION ===
+// === AUTH MIDDLEWARE
 function requireLogin(req, res, next) {
   if (!req.session.user) return res.redirect("/login");
   next();
 }
 
-// === ROUTES ===
+// === ROUTES
 app.get("/", (req, res) => {
   if (!req.session.user) return res.redirect("/login");
   res.redirect("/chat");
@@ -172,10 +169,7 @@ app.post("/login", async (req, res) => {
       email: user.email,
       name: user.name
     };
-    req.session.save(err => {
-      if (err) return res.redirect("/login");
-      res.redirect("/chat");
-    });
+    req.session.save(() => res.redirect("/chat"));
   });
 });
 
@@ -224,7 +218,7 @@ app.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/login"));
 });
 
-
+// === START SERVER
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
