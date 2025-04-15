@@ -17,17 +17,13 @@ const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 
-// === CONFIG ===
 const mongoURI = process.env.MONGODB_URI || "mongodb+srv://120026:bora123@chat-cluster.za6ljq0.mongodb.net/?retryWrites=true&w=majority&appName=chat-cluster";
 const isProduction = process.env.NODE_ENV === 'production';
 const frontendUrl = isProduction 
   ? process.env.FRONTEND_URL || 'https://chat-me-app-scak.onrender.com'
   : 'http://localhost:3000';
 
-// ✅ Трябва да е преди session
 app.set('trust proxy', 1);
-
-// === MIDDLEWARES ===
 app.use(express.static(path.join(__dirname, "public")));
 app.use('/styles', express.static(path.join(__dirname, 'styles')));
 app.set("view engine", "pug");
@@ -55,7 +51,6 @@ app.locals.generateColor = function (str) {
   return `hsl(${hue}, 70%, 60%)`;
 };
 
-// === DATABASE ===
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -63,7 +58,6 @@ mongoose.connect(mongoURI, {
 .then(() => console.log("✅ MongoDB connected"))
 .catch(err => console.error("❌ MongoDB error:", err));
 
-// ✅ SESSION
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "chatnotes-secret",
   resave: false,
@@ -80,7 +74,6 @@ const sessionMiddleware = session({
 });
 app.use(sessionMiddleware);
 
-// === SOCKET.IO SESSION
 const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
 io.use(wrap(sessionMiddleware));
 io.use(wrap(cookieParser()));
@@ -136,13 +129,11 @@ io.on("connection", async (socket) => {
   }
 });
 
-// === AUTH MIDDLEWARE
 function requireLogin(req, res, next) {
   if (!req.session.user) return res.redirect("/login");
   next();
 }
 
-// === ROUTES
 app.get("/", (req, res) => {
   if (!req.session.user) return res.redirect("/login");
   res.redirect("/chat");
@@ -218,7 +209,6 @@ app.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/login"));
 });
 
-// === START SERVER
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
