@@ -14,13 +14,21 @@ const cookieParser = require("cookie-parser");
 const app = express();
 const server = http.createServer(app);
 const flash = require('express-flash');
-const authRoutes = require('./routes/auth');
 
 const mongoURI = process.env.MONGODB_URI || "mongodb+srv://120026:bora123@chat-cluster.za6ljq0.mongodb.net/?retryWrites=true&w=majority&appName=chat-cluster";
 const frontendUrl = process.env.NODE_ENV === 'production' 
   ? process.env.FRONTEND_URL || 'https://chat-me-app-scak.onrender.com'
   : 'http://localhost:3000';
+function generateColor(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash % 360);
+  return `hsl(${hue}, 70%, 60%)`;
+}
 
+app.locals.generateColor = generateColor;
 app.set('trust proxy', 1);
 app.use(cookieParser());
 app.use(express.json());
@@ -58,22 +66,11 @@ const sessionMiddleware = session({
     maxAge: 1000 * 60 * 60 * 24, 
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    domain: process.env.NODE_ENV === "production" ? '.chat-me-app-scak.onrender.com' : undefined
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
   },
 });
 
 app.use(sessionMiddleware);
-
-const io = socketio(server, {
-  cors: {
-    origin: frontendUrl,
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
-
-app.use('/', authRoutes);
 
 function requireLogin(req, res, next) {
   if (!req.session.user) {
@@ -153,22 +150,19 @@ app.post("/register", async (req, res) => {
 
 app.get("/chat", requireLogin, async (req, res) => {
   try {
-    const messages = await Message.find()
-      .populate("user", "username")
-      .sort({ timestamp: -1 })
-      .limit(50);
-    const allUsers = await User.find().sort({ username: 1 });
-
-    const onlineUserIds = Array.from(connectedUsers.values()).map(u => u.id.toString());
-    const usersWithStatus = allUsers.map(user => ({
-      ...user.toObject(),
-      online: onlineUserIds.includes(user._id.toString()),
-    }));
+    const [messages, allUsers] = await Promise.all([
+      Message.find({ isPrivate: false })
+        .populate("user", "username")
+        .sort({ timestamp: -1 })
+        .limit(50),
+      
+      User.find({ _id: { $ne: req.session.user._id } }).sort({ username: 1 })
+    ]);
 
     res.render("chat", {
       user: req.session.user,
       messages: messages.reverse(),
-      allUsers: usersWithStatus,
+      allUsers
     });
   } catch (err) {
     console.error("Грешка при зареждане на чата:", err);
@@ -183,136 +177,79 @@ app.get("/logout", (req, res) => {
   });
 });
 
+const io = socketio(server, {
+  cors: {
+    origin: frontendUrl,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
 const connectedUsers = new Map();
 
-const wrap = (middleware) => (socket, next) =>
-  middleware(socket.request, {}, next);
+const wrap = (middleware) => (socket, next) => middleware(socket.request, {}, next);
 io.use(wrap(sessionMiddleware));
 
 io.on("connection", async (socket) => {
   const user = socket.request.session.user;
-
-  if (!user) {
-    console.log("Неавтентикиран потребител - изключване");
-    return socket.disconnect(true);
-  }
+  if (!user) return socket.disconnect(true);
 
   connectedUsers.set(socket.id, {
     id: user._id,
     username: user.username,
-    socketId: socket.id,
+    socketId: socket.id
   });
 
   console.log(`${user.username} се присъедини към чата`);
   updateOnlineUsers();
 
-  const messages = await Message.find()
-    .populate("user", "username")
-    .sort({ timestamp: -1 })
-    .limit(50);
-  socket.emit("messageHistory", messages);
-
-  socket.on("chatMessage", async (messageData) => {
-    const messageText = messageData.text.trim();
-    if (!messageText) return;
-
-    const message = new Message({
-      text: messageText,
-      user: user._id,
-      isPrivate: false,
-      timestamp: new Date(),
-    });
-
+  socket.on("requestMessages", async () => {
     try {
-      const savedMessage = await message.save();
-      io.emit("newMessage", {
-        text: savedMessage.text,
-        timestamp: savedMessage.timestamp.toLocaleTimeString(),
-        user: {
-          _id: user._id,
-          username: user.username,
-        },
-      });
+      const messages = await Message.find({ isPrivate: false })
+        .populate("user", "username")
+        .sort({ timestamp: 1 });
+      socket.emit("messageHistory", messages);
     } catch (err) {
-      console.error("Грешка при запазване на съобщение:", err);
+      console.error("Грешка при зареждане на историята:", err);
     }
   });
 
-  socket.on("privateMessage", async (data) => {
-    const messageText = data.text.trim();
-    if (!messageText || !data.targetUserId) return;
+  socket.on("requestOnlineUsers", () => {
+    const onlineUsers = Array.from(connectedUsers.values());
+    socket.emit("onlineUsersUpdate", onlineUsers);
+  });
 
-    const message = new Message({
-      text: messageText,
-      user: user._id,
-      toUser: data.targetUserId,
-      isPrivate: true,
-      timestamp: new Date(),
-    });
+  socket.on("groupMessage", async (messageText) => {
+    if (!messageText.trim()) return;
 
     try {
-      const savedMessage = await message.save();
-
-      const targetUser = Array.from(connectedUsers.values()).find(
-        (u) => u.id === data.targetUserId
-      );
-
-      if (targetUser) {
-        const targetUserSocket = io.sockets.sockets.get(targetUser.socketId);
-        if (targetUserSocket) {
-          targetUserSocket.emit("privateMessage", {
-            text: savedMessage.text,
-            timestamp: savedMessage.timestamp.toLocaleTimeString(),
-            from: user.username,
-            fromId: user._id,
-          });
-        }
-      }
-
-      socket.emit("privateMessageSent", {
-        text: savedMessage.text,
-        timestamp: savedMessage.timestamp.toLocaleTimeString(),
-        to: targetUser?.username || "Unknown",
-        toId: data.targetUserId,
+      const message = new Message({
+        text: messageText,
+        user: user._id,
+        isPrivate: false,
+        timestamp: new Date()
       });
+
+      const savedMessage = await message.save();
+      const populatedMessage = await Message.populate(savedMessage, [
+        { path: 'user', select: 'username' }
+      ]);
+
+      io.emit("newGroupMessage", populatedMessage);
     } catch (err) {
-      console.error("Грешка при запазване на частно съобщение:", err);
+      console.error("Грешка при запазване на групово съобщение:", err);
     }
   });
 
   socket.on("disconnect", () => {
-    console.log(`${user.username} напусна чата`);
     connectedUsers.delete(socket.id);
     updateOnlineUsers();
+    console.log(`${user.username} напусна чата`);
   });
 
   function updateOnlineUsers() {
     const onlineUsers = Array.from(connectedUsers.values());
-    io.emit("onlineUsers", onlineUsers);
-
-    const onlineUserIds = onlineUsers.map((u) => u.id.toString());
-    io.emit("userStatusUpdate", onlineUserIds);
-  }
-});
-
-app.get("/api/message-history", requireLogin, async (req, res) => {
-  try {
-    const userId = req.session.user._id;
-    const groupMessages = await Message.find({
-      $or: [
-        { isPrivate: false },
-        { isPrivate: true, $or: [{ user: userId }, { toUser: userId }] },
-      ],
-    })
-      .populate("user", "username")
-      .populate("toUser", "username")
-      .sort({ timestamp: -1 })
-      .limit(100);
-
-    res.json(groupMessages.reverse());
-  } catch (err) {
-    console.error("Грешка при зареждане на история:", err);
-    res.status(500).json({ error: "Грешка при зареждане на история" });
+    io.emit("onlineUsersUpdate", onlineUsers);
   }
 });
 

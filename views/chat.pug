@@ -3,77 +3,109 @@ html(lang="bg")
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
-    title Чат система | #{user.username}
+    title Chat me app | #{user.username}
     link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet")
     link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css")
+    link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap")
     link(rel="shortcut icon", href="https://img.icons8.com/?size=100&id=lMGOquc93TO2&format=png&color=000000", type="image/x-icon")
     link(rel="stylesheet", href="/styles/chat.css")
   
   body
     #userData(data-user=JSON.stringify(user))
+    script.
+      function stringToColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+          hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const hue = Math.abs(hash % 360);
+        return `hsl(${hue}, 70%, 60%)`;
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.user-avatar').forEach(avatar => {
+          const username = avatar.dataset.username || 
+                         avatar.closest('.user-item')?.querySelector('.user-name')?.textContent || 
+                         avatar.closest('.message-header')?.querySelector('.message-username')?.textContent;
+          if (username) {
+            avatar.style.background = stringToColor(username);
+          }
+        });
+      });
+    
     .app-container
       .sidebar
         .sidebar-header
           .user-profile
-            .user-avatar= user.username.charAt(0).toUpperCase()
-            .user-name= user.username
+            .user-avatar(data-username=user.username)= user.username.charAt(0).toUpperCase()
+            .user-details
+              .user-name= user.username
+              .user-status
+                span.status-indicator.online
+                span.status-text онлайн
           button.logout-btn#logoutBtn(title="Изход")
             i.fas.fa-sign-out-alt
+            span Изход
         
         .search-container
+          i.fas.fa-search
           input.search-input(type="text" placeholder="Търсене на потребители...")
         
         .users-list#usersList
           if allUsers && allUsers.length
             each userItem in allUsers
-              if userItem._id.toString() !== user._id.toString()
-                .user-item(data-user-id=userItem._id)
-                  .user-status(class=userItem.online ? 'online' : 'offline')
-                  .user-info
-                    .user-name= userItem.username
-                    .user-status-text= userItem.online ? 'онлайн' : 'офлайн'
+              .user-item(data-user-id=userItem._id)
+                .user-avatar(data-username=userItem.username)= userItem.username.charAt(0).toUpperCase()
+                .user-info
+                  .user-name= userItem.username
+                  .user-status
+                    span.status-indicator(class=userItem.online ? 'online' : 'offline')
+                    span.status-text= userItem.online ? 'онлайн' : 'офлайн'
           else
-            .no-users Списъкът с потребители е празен
+            .no-users
+              i.fas.fa-users
+              span Списъкът с потребители е празен
       
       .chat-container
         .chat-header
-          .chat-title Групов чат
+          .chat-title
+            i.fas.fa-users
+            span Групов чат
           .chat-status
-            span.status-indicator
-            span Онлайн
-        
-        .chat-tabs#chatTabs
-          .chat-tab.active(data-tab="group")
-            | Групов чат
-            span.chat-tab-close
-              i.fas.fa-times
+            i.fas.fa-circle.text-success
+            span#onlineCount 0 онлайн
         
         .chat-content
           .chat-box
-            .message-container
-              ul.message-list#groupMessages
-                each message in messages
-                  if message.user
-                    li.message(class=message.user._id.toString() === user._id.toString() ? 'my-message' : 'other-message')
-                      .message-header
+            ul.message-list#messagesList
+              each message in messages
+                if message.user
+                  li.message(
+                    class=message.user._id.toString() === user._id.toString() ? 'my-message' : 'other-message'
+                  )
+                    .message-header
+                      if message.user._id.toString() !== user._id.toString()
+                        .user-avatar(data-username=message.user.username)= message.user.username.charAt(0).toUpperCase()
+                      .message-info
                         .message-username= message.user.username
-                        .message-time= new Date(message.timestamp).toLocaleTimeString()
-                      .message-content= message.text
-                  else
-                    li.message(class='other-message')  
-                      .message-header
-                        .message-username= 'Unknown User'  
-                        .message-time= new Date(message.timestamp).toLocaleTimeString()
-                      .message-content= message.text
+                        .message-time= new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                    .message-content= message.text
+                else
+                  li.message.other-message
+                    .message-header
+                      .user-avatar ?
+                      .message-info
+                        .message-username Неизвестен потребител
+                        .message-time= new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                    .message-content= message.text
         
           .input-area
             .message-form
               form#messageForm
-                .form-group
+                .input-group
                   input#messageInput(type="text" placeholder="Напишете съобщение..." autocomplete="off")
                   button.send-btn(type="submit")
                     i.fas.fa-paper-plane
-                    span Изпрати
+                    span.d-none.d-sm-inline Изпрати
 
     script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js")
     script(src="https://cdn.socket.io/4.0.1/socket.io.min.js")
