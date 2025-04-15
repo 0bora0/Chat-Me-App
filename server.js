@@ -71,16 +71,15 @@ const sessionConfig = {
   saveUninitialized: false,
   store: MongoStore.create({
     mongoUrl: mongoURI,
-    ttl: 14 * 24 * 60 * 60,
-    autoRemove: 'native'
+    ttl: 14 * 24 * 60 * 60
   }),
-  proxy: isProduction,
+  proxy: true,
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+    maxAge: 1000 * 60 * 60 * 24 * 7,
     httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax',
-    domain: isProduction ? '.onrender.com' : undefined
+    secure: true,
+    sameSite: 'none',
+    domain: process.env.NODE_ENV === 'production' ? 'chat-me-app-scak.onrender.com' : undefined
   }
 };
 
@@ -112,7 +111,14 @@ app.get("/login", (req, res) => {
   if (req.session.user) return res.redirect("/chat");
   res.render("login", { messages: req.flash() });
 });
-
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    session: req.sessionID,
+    user: req.session?.user,
+    cookies: req.cookies
+  });
+});
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -123,28 +129,29 @@ app.post('/login', async (req, res) => {
       return res.status(401).redirect('/login');
     }
 
-    req.session.regenerate(err => {
+    req.session.user = {
+      _id: user._id,
+      username: user.username,
+      email: user.email
+    };
+
+    // Изрично запазване на сесията
+    req.session.save(err => {
       if (err) {
-        console.error('Session regenerate error:', err);
+        console.error('Session save error:', err);
         return res.status(500).redirect('/login');
       }
-
-      req.session.user = {
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        name: user.name
-      };
-
-      req.session.save(err => {
-        if (err) {
-          console.error('Session save error:', err);
-          return res.status(500).redirect('/login');
-        }
-        
-        console.log('Login successful for user:', user.username);
-        return res.redirect('/chat');
+      
+      console.log('Login successful, setting cookie');
+      res.cookie('connect.sid', req.sessionID, {
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        domain: process.env.NODE_ENV === 'production' ? 'chat-me-app-scak.onrender.com' : undefined
       });
+      
+      return res.redirect('/chat');
     });
   } catch (err) {
     console.error('Login error:', err);
