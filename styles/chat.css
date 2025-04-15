@@ -435,7 +435,6 @@ body {
   transform: translateY(0);
 }
 
-/* Scrollbar styles */
 ::-webkit-scrollbar {
   width: 8px;
 }

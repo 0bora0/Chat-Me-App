@@ -55,8 +55,8 @@ mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => console.log("✅ MongoDB connected"))
-.catch(err => console.error("❌ MongoDB error:", err));
+.then(() => console.log("MongoDB connected"))
+.catch(err => console.error("MongoDB error:", err));
 
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "chatnotes-secret",
@@ -211,6 +211,6 @@ app.get("/logout", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 Frontend URL: ${frontendUrl}`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Frontend URL: ${frontendUrl}`);
 });
