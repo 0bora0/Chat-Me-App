@@ -74,8 +74,8 @@ const sessionMiddleware = session({
     maxAge: 1000 * 60 * 60 * 24 * 7,
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? "none" : "lax"
-    // ❌ Не задавай domain, ако нямаш нужда от поддомейни
+    sameSite: isProduction ? "none" : "lax",
+    domain: isProduction ? ".chat-me-app-scak.onrender.com" : undefined
   }
 });
 app.use(sessionMiddleware);
