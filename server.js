@@ -11,234 +11,74 @@ const Message = require("./models/Message");
 const MongoStore = require("connect-mongo");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const flash = require("express-flash");
+
 const app = express();
 const server = http.createServer(app);
-const flash = require('express-flash');
+const io = socketio(server);
 
+// === CONFIGURATION ===
 const mongoURI = process.env.MONGODB_URI || "mongodb+srv://120026:bora123@chat-cluster.za6ljq0.mongodb.net/?retryWrites=true&w=majority&appName=chat-cluster";
 const isProduction = process.env.NODE_ENV === 'production';
 const frontendUrl = isProduction 
   ? process.env.FRONTEND_URL || 'https://chat-me-app-scak.onrender.com'
   : 'http://localhost:3000';
 
-// Helper function
-function generateColor(str) {
+// === APP MIDDLEWARES ===
+app.set("view engine", "pug");
+app.set("views", path.join(__dirname, "views"));
+app.use(express.static(path.join(__dirname, "public")));
+app.use('/styles', express.static(path.join(__dirname, 'styles')));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(flash());
+
+app.locals.generateColor = function(str) {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
   const hue = Math.abs(hash % 360);
   return `hsl(${hue}, 70%, 60%)`;
-}
+};
 
-// App configuration
-app.locals.generateColor = generateColor;
-app.set('trust proxy', 1); // Trust first proxy
-app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/styles', express.static(path.join(__dirname, 'styles')));
-app.use(flash());
-
-// CORS configuration
 const corsOptions = {
   origin: frontendUrl,
   credentials: true,
-  exposedHeaders: ['set-cookie'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie', 'Set-Cookie']
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 app.use(cors(corsOptions));
 
-// View engine setup
-app.set("view engine", "pug");
-app.set("views", path.join(__dirname, "views"));
-
-// MongoDB connection
-mongoose.connect(mongoURI, { 
-  useNewUrlParser: true, 
-  useUnifiedTopology: true, 
-  serverSelectionTimeoutMS: 50000 
+// === MONGOOSE ===
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 })
-.then(() => console.log('MongoDB connected'))
-.catch((err) => console.log('MongoDB connection error:', err));
+.then(() => console.log("✅ MongoDB connected"))
+.catch(err => console.error("❌ MongoDB error:", err));
 
-// Session configuration
-const sessionConfig = {
+// === SESSION ===
+const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "chatnotes-secret",
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: mongoURI,
-    ttl: 14 * 24 * 60 * 60
+    mongoUrl: mongoURI
   }),
-  proxy: true,
+  proxy: isProduction,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 7,
     httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    domain: process.env.NODE_ENV === 'production' ? 'chat-me-app-scak.onrender.com' : undefined
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    domain: isProduction ? ".onrender.com" : undefined
   }
-};
-
-if (isProduction) {
-  app.set('trust proxy', 1); // Trust first proxy
-  sessionConfig.cookie.secure = true;
-  sessionConfig.cookie.sameSite = 'none';
-}
-
-const sessionMiddleware = session(sessionConfig);
+});
 app.use(sessionMiddleware);
 
-// Middleware to check login
-function requireLogin(req, res, next) {
-  if (!req.session.user) {
-    console.log('Unauthorized access attempt - no session');
-    return res.redirect("/login");
-  }
-  next();
-}
-
-// Routes
-app.get("/", (req, res) => {
-  if (!req.session.user) return res.redirect("/login");
-  res.redirect("/chat");
-});
-
-app.get("/login", (req, res) => {
-  if (req.session.user) return res.redirect("/chat");
-  res.render("login", { messages: req.flash() });
-});
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    session: req.sessionID,
-    user: req.session?.user,
-    cookies: req.cookies
-  });
-});
-app.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      req.flash('error', 'Invalid credentials');
-      return res.status(401).redirect('/login');
-    }
-
-    req.session.user = {
-      _id: user._id,
-      username: user.username,
-      email: user.email
-    };
-
-    // Изрично запазване на сесията
-    req.session.save(err => {
-      if (err) {
-        console.error('Session save error:', err);
-        return res.status(500).redirect('/login');
-      }
-      
-      console.log('Login successful, setting cookie');
-      res.cookie('connect.sid', req.sessionID, {
-        maxAge: 1000 * 60 * 60 * 24 * 7,
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        domain: process.env.NODE_ENV === 'production' ? 'chat-me-app-scak.onrender.com' : undefined
-      });
-      
-      return res.redirect('/chat');
-    });
-  } catch (err) {
-    console.error('Login error:', err);
-    req.flash('error', 'Server error');
-    res.status(500).redirect('/login');
-  }
-});
-
-app.get("/register", (req, res) => {
-  res.render("register", { messages: req.flash() });
-});
-
-app.post("/register", async (req, res) => {
-  const { username, name, email, password } = req.body;
-  
-  try {
-    const existing = await User.findOne({ $or: [{ email }, { username }] });
-    if (existing) {
-      req.flash('error', 'Email or username already in use');
-      return res.redirect("/register");
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ username, name, email, password: hashedPassword });
-    await user.save();
-
-    req.session.regenerate(err => {
-      if (err) {
-        console.error('Session regenerate error:', err);
-        return res.status(500).redirect('/register');
-      }
-
-      req.session.user = {
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        name: user.name
-      };
-
-      req.session.save(err => {
-        if (err) {
-          console.error('Session save error:', err);
-          return res.status(500).redirect('/register');
-        }
-        return res.redirect('/chat');
-      });
-    });
-  } catch (err) {
-    console.error('Registration error:', err);
-    req.flash('error', 'Registration error');
-    return res.redirect("/register");
-  }
-});
-
-app.get("/chat", requireLogin, async (req, res) => {
-  try {
-    const [messages, allUsers] = await Promise.all([
-      Message.find({ isPrivate: false })
-        .populate("user", "username")
-        .sort({ timestamp: -1 })
-        .limit(50),
-      User.find({ _id: { $ne: req.session.user._id } }).sort({ username: 1 })
-    ]);
-
-    res.render("chat", {
-      user: req.session.user,
-      messages: messages.reverse(),
-      allUsers
-    });
-  } catch (err) {
-    console.error("Chat load error:", err);
-    res.status(500).send("Error loading chat");
-  }
-});
-
-app.get("/logout", (req, res) => {
-  req.session.destroy(err => {
-    if (err) console.error('Session destroy error:', err);
-    res.redirect("/login");
-  });
-});
-
-// Socket.io setup
-const io = socketio(server, {
-  cors: corsOptions
-});
-
+// === SOCKET.IO MIDDLEWARE ===
 const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
 io.use(wrap(sessionMiddleware));
 io.use(wrap(cookieParser()));
@@ -246,12 +86,11 @@ io.use(wrap(cookieParser()));
 const connectedUsers = new Map();
 
 io.on("connection", async (socket) => {
-  if (!socket.request.session.user) {
-    console.log('Unauthorized socket connection attempt');
-    return socket.disconnect(true);
-  }
+  const session = socket.request.session;
+  const user = session?.user;
 
-  const user = socket.request.session.user;
+  if (!user) return socket.disconnect(true);
+
   connectedUsers.set(socket.id, {
     id: user._id,
     username: user.username,
@@ -262,37 +101,30 @@ io.on("connection", async (socket) => {
   updateOnlineUsers();
 
   socket.on("requestMessages", async () => {
-    try {
-      const messages = await Message.find({ isPrivate: false })
-        .populate("user", "username")
-        .sort({ timestamp: 1 });
-      socket.emit("messageHistory", messages);
-    } catch (err) {
-      console.error("Error loading messages:", err);
-    }
+    const messages = await Message.find({ isPrivate: false })
+      .populate("user", "username")
+      .sort({ timestamp: 1 });
+    socket.emit("messageHistory", messages);
   });
 
-  socket.on("groupMessage", async (messageText) => {
-    if (!messageText.trim()) return;
+  socket.on("groupMessage", async (text) => {
+    if (!text.trim()) return;
 
-    try {
-      const message = new Message({
-        text: messageText,
-        user: user._id,
-        isPrivate: false,
-        timestamp: new Date()
-      });
+    const message = new Message({
+      text,
+      user: user._id,
+      isPrivate: false,
+      timestamp: new Date()
+    });
 
-      const savedMessage = await message.save();
-      const populatedMessage = await Message.populate(savedMessage, {
-        path: 'user',
-        select: 'username'
-      });
+    const saved = await message.save();
+    const populated = await Message.populate(saved, {
+      path: 'user',
+      select: 'username'
+    });
 
-      io.emit("newGroupMessage", populatedMessage);
-    } catch (err) {
-      console.error("Error saving message:", err);
-    }
+    // Broadcast to all including sender
+    io.emit("newGroupMessage", populated);
   });
 
   socket.on("disconnect", () => {
@@ -302,15 +134,99 @@ io.on("connection", async (socket) => {
   });
 
   function updateOnlineUsers() {
-    const onlineUsers = Array.from(connectedUsers.values());
-    io.emit("onlineUsersUpdate", onlineUsers);
+    const users = Array.from(connectedUsers.values());
+    io.emit("onlineUsersUpdate", users);
   }
 });
 
-// Start server
+// === LOGIN PROTECTION ===
+function requireLogin(req, res, next) {
+  if (!req.session.user) return res.redirect("/login");
+  next();
+}
+
+// === ROUTES ===
+app.get("/", (req, res) => {
+  if (!req.session.user) return res.redirect("/login");
+  res.redirect("/chat");
+});
+
+app.get("/login", (req, res) => {
+  if (req.session.user) return res.redirect("/chat");
+  res.render("login", { messages: req.flash() });
+});
+
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email });
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    req.flash("error", "Invalid credentials");
+    return res.redirect("/login");
+  }
+
+  req.session.regenerate(err => {
+    if (err) return res.redirect("/login");
+    req.session.user = {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      name: user.name
+    };
+    req.session.save(err => {
+      if (err) return res.redirect("/login");
+      res.redirect("/chat");
+    });
+  });
+});
+
+app.get("/register", (req, res) => {
+  res.render("register", { messages: req.flash() });
+});
+
+app.post("/register", async (req, res) => {
+  const { username, name, email, password } = req.body;
+  const exists = await User.findOne({ $or: [{ email }, { username }] });
+  if (exists) {
+    req.flash("error", "Email or username in use");
+    return res.redirect("/register");
+  }
+
+  const hashed = await bcrypt.hash(password, 10);
+  const user = new User({ username, name, email, password: hashed });
+  await user.save();
+
+  req.session.regenerate(err => {
+    if (err) return res.redirect("/register");
+    req.session.user = {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      name: user.name
+    };
+    req.session.save(() => res.redirect("/chat"));
+  });
+});
+
+app.get("/chat", requireLogin, async (req, res) => {
+  const [messages, users] = await Promise.all([
+    Message.find({ isPrivate: false }).populate("user", "username").sort({ timestamp: -1 }).limit(50),
+    User.find({ _id: { $ne: req.session.user._id } }).sort({ username: 1 })
+  ]);
+
+  res.render("chat", {
+    user: req.session.user,
+    messages: messages.reverse(),
+    allUsers: users
+  });
+});
+
+app.get("/logout", (req, res) => {
+  req.session.destroy(() => res.redirect("/login"));
+});
+
+// === START SERVER ===
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Frontend URL: ${frontendUrl}`);
-  console.log(`Production mode: ${isProduction}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌍 Frontend URL: ${frontendUrl}`);
 });
