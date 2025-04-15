@@ -73,7 +73,7 @@ const sessionMiddleware = session({
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? "none" : "lax",
-    domain: isProduction ? ".onrender.com" : undefined
+    domain: isProduction ? ".chat-me-app-scak.onrender.com" : undefined
   }
 });
 app.use(sessionMiddleware);
