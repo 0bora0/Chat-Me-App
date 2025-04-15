@@ -25,7 +25,6 @@ const messageSchema = new mongoose.Schema({
 
 messageSchema.index({ user: 1, timestamp: -1 });
 messageSchema.index({ isPrivate: 1, timestamp: -1 });
-
 messageSchema.virtual('formattedTime').get(function() {
   return this.timestamp.toLocaleTimeString();
 });
