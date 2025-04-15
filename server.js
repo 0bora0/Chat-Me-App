@@ -40,7 +40,8 @@ app.use(cors({
   origin: frontendUrl,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['set-cookie']
 }));
 
 app.set("view engine", "pug");
@@ -107,8 +108,14 @@ app.post("/login", async (req, res) => {
       name: user.name
     };
 
-    console.log('User logged in:', req.session.user);
-    return res.redirect("/chat");
+    req.session.save(err => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.redirect("/login");
+      }
+      console.log('User logged in:', req.session.user);
+      return res.redirect("/chat");
+    });
   } catch (err) {
     console.error('Login error:', err);
     req.flash('error', 'Грешка при влизане');
@@ -149,14 +156,19 @@ app.post("/register", async (req, res) => {
   }
 });
 
-app.get("/chat", requireLogin, async (req, res) => {
+app.get("/chat", async (req, res) => {
+  console.log('Session in /chat:', req.session); // Добавете за дебъг
+  if (!req.session.user) {
+    console.log('No user session, redirecting');
+    return res.redirect("/login");
+  }
+  
   try {
     const [messages, allUsers] = await Promise.all([
       Message.find({ isPrivate: false })
         .populate("user", "username")
         .sort({ timestamp: -1 })
         .limit(50),
-      
       User.find({ _id: { $ne: req.session.user._id } }).sort({ username: 1 })
     ]);
 
@@ -170,7 +182,6 @@ app.get("/chat", requireLogin, async (req, res) => {
     res.status(500).send("Грешка при зареждане на чата");
   }
 });
-
 app.get("/logout", (req, res) => {
   req.session.destroy(err => {
     if (err) console.error('Session destroy error:', err);
