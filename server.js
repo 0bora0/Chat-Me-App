@@ -54,21 +54,22 @@ mongoose.connect(mongoURI, {
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.log('MongoDB connection error:', err));
 
-const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET || "chatnotes-secret",
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({ 
-    mongoUrl: mongoURI,
-    ttl: 14 * 24 * 60 * 60 
-  }),
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24, 
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
-  },
-});
+  const sessionMiddleware = session({
+    secret: process.env.SESSION_SECRET || "chatnotes-secret",
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ 
+      mongoUrl: mongoURI,
+      ttl: 14 * 24 * 60 * 60 
+    }),
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      domain: process.env.NODE_ENV === "production" ? "chat-me-app-scak.onrender.com" : undefined
+    }
+  });
 
 app.use(sessionMiddleware);
 
